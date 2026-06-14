@@ -35,4 +35,4 @@ This project is a lightweight HTML-based scoreboard for casual cornhole matches.
 
 ## License
 
-Add a license file if you plan to share or distribute this project publicly.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
