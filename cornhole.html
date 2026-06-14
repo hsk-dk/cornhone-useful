@@ -4,31 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cornhole">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiQ29ybmhvbGUiLCJzaG9ydF9uYW1lIjoiQ29ybmhvbGUiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiI2ZmZmZmZiIsIm9yaWVudGF0aW9uIjoicG9ydHJhaXQifQ==">
 <title>Cornhole</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+  /* ── Design tokens matching useful.dk / Quark ── */
   :root {
-    --bg:       #1a1f2e;
-    --surface:  #242a3a;
-    --card:     #2d3447;
-    --gold:     #f0c040;
-    --gold-dim: #a07c1a;
-    --green:    #4caf7d;
-    --red:      #e05555;
-    --text:     #e8e4d8;
-    --muted:    #7a8099;
-    --radius:   20px;
+    --primary:    #5755d9;
+    --primary-dk: #4240c4;
+    --success:    #32b643;
+    --error:      #e85600;
+    --warning:    #ffb700;
+    --gray-dark:  #3b4351;
+    --gray:       #acb3c2;
+    --gray-light: #f8f9fa;
+    --border:     #dadee4;
+    --text:       #3b4351;
+    --muted:      #acb3c2;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    background: #2a3040
+      url('https://auth.useful.dk/media/public/background.jpg')
+      center top / cover fixed no-repeat;
   }
 
   html, body {
-    height: 100%;
-    background: var(--bg);
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: var(--text);
-    font-family: 'Inter', sans-serif;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
   }
@@ -37,581 +47,723 @@
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
-    padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 16px);
+    background: transparent;
   }
 
-  /* ── Header ── */
-  header {
+  /* ── Navbar (matches useful.dk header) ── */
+  .navbar {
+    background: rgba(255,255,255,0.82);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.4);
+    border-bottom: 1px solid rgba(255,255,255,0.5);
+    padding: 0 1rem;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 0 8px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
   }
 
-  .logo {
-    font-family: 'Fraunces', serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--gold);
-    letter-spacing: -0.5px;
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-dark);
+    text-decoration: none;
   }
 
-  .logo span { font-style: italic; font-weight: 300; color: var(--text); }
+  .navbar-brand img {
+    height: 28px;
+    width: auto;
+  }
 
-  .mode-toggle {
+  .navbar-brand .sep {
+    color: var(--border);
+    font-weight: 300;
+    font-size: 1.2rem;
+  }
+
+  .navbar-brand .page-title {
+    color: var(--gray-dark);
+    font-weight: 600;
+  }
+
+  .navbar-actions {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--surface);
-    border-radius: 30px;
-    padding: 6px 12px;
-    font-size: 12px;
-    color: var(--muted);
-    cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.07);
-    user-select: none;
   }
 
-  .mode-toggle .pill {
-    background: var(--gold);
-    color: var(--bg);
-    border-radius: 20px;
-    padding: 2px 8px;
+  /* ── Offline banner ── */
+  #offlineBanner {
+    display: none;
+    background: var(--error);
+    color: #fff;
+    text-align: center;
+    font-size: .75rem;
     font-weight: 600;
-    font-size: 11px;
-    transition: background 0.2s;
+    padding: 5px 1rem;
   }
 
-  /* ── Scoreboards ── */
-  .boards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 12px;
-  }
-
-  .board {
-    background: var(--card);
-    border-radius: var(--radius);
-    padding: 16px 12px 20px;
+  /* ── Main content ── */
+  .main {
+    flex: 1;
+    padding: 1rem 1rem max(env(safe-area-inset-bottom), 1.5rem);
+    max-width: 540px;
+    width: 100%;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    border: 1.5px solid rgba(255,255,255,0.06);
-    position: relative;
-    transition: border-color 0.3s;
+    gap: 1rem;
   }
 
-  .board.winning { border-color: var(--gold); }
-  .board.busted  { border-color: var(--red); }
-
-  .team-name-wrap {
+  /* ── Mode chip ── */
+  .mode-row {
     display: flex;
     align-items: center;
-    gap: 4px;
-    width: 100%;
-    justify-content: center;
+    justify-content: space-between;
   }
 
-  .team-name {
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
+  .mode-row .label-sm {
+    font-size: .7rem;
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
+    letter-spacing: .07em;
+  }
+
+  .chip {
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: .7rem;
+    font-weight: 600;
+  }
+
+  /* ── Score cards ── */
+  .score-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+  }
+
+  .score-card {
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: .3rem;
+    padding: 1rem .75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .25rem;
+    background: rgba(255,255,255,0.78);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    backdrop-filter: blur(12px) saturate(1.3);
+    transition: border-color .2s, box-shadow .2s;
+  }
+
+  .score-card.winning {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(87,85,217,.15);
+  }
+
+  .score-card.busted {
+    border-color: var(--error);
+    box-shadow: 0 0 0 2px rgba(232,86,0,.12);
+  }
+
+  .team-name-input {
+    font-size: .65rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
     background: transparent;
     border: none;
     outline: none;
-    color: var(--muted);
     width: 100%;
     text-align: center;
     cursor: pointer;
+    font-family: inherit;
+    padding: 0;
   }
+  .team-name-input:focus { color: var(--primary); }
 
-  .team-name:focus { color: var(--text); }
-
-  .score-display {
-    font-family: 'Fraunces', serif;
-    font-size: 68px;
+  .score-num {
+    font-size: 3.8rem;
     font-weight: 700;
     line-height: 1;
-    color: var(--text);
-    transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), color 0.3s;
+    color: var(--gray-dark);
+    transition: transform .15s cubic-bezier(.34,1.56,.64,1);
+    font-variant-numeric: tabular-nums;
   }
+  .score-num.bump { transform: scale(1.12); }
+  .score-card.winning .score-num { color: var(--primary); }
+  .score-card.busted  .score-num { color: var(--error); }
 
-  .score-display.bump { transform: scale(1.15); }
-  .board.winning .score-display { color: var(--gold); }
-  .board.busted  .score-display { color: var(--red); }
-
-  .score-label {
-    font-size: 11px;
+  .score-sub {
+    font-size: .65rem;
     color: var(--muted);
-    letter-spacing: 0.5px;
   }
 
-  /* ── Round input ── */
-  .round-section {
-    margin-top: 16px;
-    background: var(--surface);
-    border-radius: var(--radius);
-    padding: 16px;
-    border: 1px solid rgba(255,255,255,0.07);
+  .bust-label {
+    font-size: .65rem;
+    font-weight: 700;
+    color: var(--error);
+    min-height: 14px;
+    text-align: center;
   }
 
-  .round-header {
+  /* ── Round panel ── */
+  .panel {
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: .3rem;
+    background: rgba(255,255,255,0.78);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    backdrop-filter: blur(12px) saturate(1.3);
+  }
+
+  .panel-header {
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 14px;
   }
 
-  .round-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .round-number {
-    font-family: 'Fraunces', serif;
-    font-size: 14px;
-    color: var(--gold);
+  .panel-title {
+    font-size: .7rem;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
   }
 
-  .inputs-row {
+  .panel-round {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .panel-body {
+    padding: .9rem;
+  }
+
+  .input-row {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    gap: 10px;
+    gap: .5rem;
     align-items: center;
   }
 
-  .team-input-block {
+  .input-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: .35rem;
   }
 
-  .input-team-label {
-    font-size: 11px;
-    color: var(--muted);
-    font-weight: 500;
-  }
-
-  .point-input-wrap {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    background: var(--card);
-    border-radius: 14px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.08);
-    width: 100%;
-  }
-
-  .pt-btn {
-    background: none;
-    border: none;
-    color: var(--text);
-    font-size: 22px;
-    font-weight: 300;
-    width: 40px;
-    height: 52px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
-    flex-shrink: 0;
-  }
-
-  .pt-btn:active { background: rgba(255,255,255,0.1); }
-
-  .pt-val {
-    font-family: 'Fraunces', serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--text);
-    flex: 1;
-    text-align: center;
-    min-width: 0;
-  }
-
-  .vs-badge {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    font-size: 18px;
-    font-weight: 300;
-    color: var(--muted);
-    text-align: center;
-  }
-
-  .add-btn {
-    margin-top: 14px;
-    width: 100%;
-    background: var(--gold);
-    color: var(--bg);
-    border: none;
-    border-radius: 14px;
-    padding: 16px;
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    transition: opacity 0.15s, transform 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .add-btn:active { opacity: 0.85; transform: scale(0.98); }
-
-  /* ── History ── */
-  .history-section {
-    margin-top: 14px;
-    flex: 1;
-  }
-
-  .history-header {
-    font-size: 11px;
+  .input-group-label {
+    font-size: .65rem;
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-    padding: 0 4px;
+    letter-spacing: .06em;
+  }
+
+  .counter {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: .3rem;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .counter-btn {
+    background: var(--gray-light);
+    border: none;
+    color: var(--gray-dark);
+    font-size: 1.3rem;
+    font-weight: 300;
+    width: 44px;
+    height: 54px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .1s;
+    line-height: 1;
+  }
+  .counter-btn:active { background: var(--border); }
+
+  .counter-val {
+    flex: 1;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--gray-dark);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vs {
+    font-size: .8rem;
+    color: var(--muted);
+    text-align: center;
+    font-style: italic;
+  }
+
+  .btn-add {
+    margin-top: .75rem;
+    width: 100%;
+  }
+
+  .mode-note {
+    margin-top: .5rem;
+    font-size: .7rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ── History ── */
+  .history-header {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: .4rem;
   }
 
   .history-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: .3rem;
     max-height: 180px;
     overflow-y: auto;
   }
 
-  .history-item {
+  .h-item {
     display: grid;
-    grid-template-columns: auto 1fr auto 1fr;
+    grid-template-columns: 28px 1fr 14px 1fr;
     align-items: center;
-    gap: 8px;
-    background: var(--surface);
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 13px;
-    animation: slideIn 0.2s ease;
+    gap: .4rem;
+    padding: .45rem .65rem;
+    background: rgba(255,255,255,0.65);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: .3rem;
+    font-size: .8rem;
+    animation: fadeUp .18s ease;
   }
 
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-6px); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .h-round { color: var(--muted); font-size: 11px; font-weight: 600; }
-  .h-pts   { font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; text-align: center; }
-  .h-pts.positive { color: var(--green); }
-  .h-pts.zero     { color: var(--muted); }
-  .h-sep   { color: var(--muted); text-align: center; font-size: 11px; }
+  .h-rnd { font-size: .65rem; font-weight: 600; color: var(--muted); }
+  .h-pts { font-weight: 700; text-align: center; }
+  .h-pts.pos { color: var(--primary); }
+  .h-pts.zero{ color: var(--muted); }
+  .h-sep { font-size: .65rem; color: var(--muted); text-align: center; }
 
-  /* ── Winner overlay ── */
-  .overlay {
+  .empty-note { font-size: .8rem; color: rgba(255,255,255,0.5); padding: .3rem 0; }
+
+  /* ── Winner modal ── */
+  .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.85);
+    background: rgba(59,67,81,.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 400;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+  .modal-box {
+    background: rgba(255,255,255,0.92);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: .3rem;
+    padding: 2rem 1.5rem 1.5rem;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 1rem;
+    transform: scale(.95);
+    transition: transform .25s cubic-bezier(.34,1.3,.64,1);
+  }
+  .modal-overlay.active .modal-box { transform: scale(1); }
+
+  .modal-icon { font-size: 3.5rem; line-height: 1; }
+  .modal-title { font-size: 1.4rem; font-weight: 700; color: var(--gray-dark); }
+  .modal-sub { font-size: .85rem; color: var(--muted); }
+
+  /* ── Confirm sheet ── */
+  .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(59,67,81,.4);
+    display: flex;
+    align-items: flex-end;
     justify-content: center;
-    gap: 20px;
-    z-index: 100;
-    padding: 32px;
-    backdrop-filter: blur(6px);
+    padding: 0 1rem max(env(safe-area-inset-bottom), 1rem);
+    z-index: 300;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity .2s;
   }
+  .sheet-overlay.active { opacity: 1; pointer-events: all; }
 
-  .overlay.show { opacity: 1; pointer-events: all; }
-
-  .winner-badge {
-    font-size: 64px;
-    line-height: 1;
+  .sheet-box {
+    background: rgba(255,255,255,0.92);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: .3rem;
+    padding: 1.5rem 1.25rem 1.25rem;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    transform: translateY(20px);
+    transition: transform .22s cubic-bezier(.34,1.3,.64,1);
   }
+  .sheet-overlay.active .sheet-box { transform: translateY(0); }
 
-  .winner-title {
-    font-family: 'Fraunces', serif;
-    font-size: 36px;
-    font-weight: 700;
-    color: var(--gold);
+  .sheet-title { font-size: 1rem; font-weight: 700; color: var(--gray-dark); text-align: center; }
+  .sheet-sub   { font-size: .8rem; color: var(--muted); text-align: center; line-height: 1.5; }
+  .sheet-btns  { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+
+  /* ── Install hint ── */
+  #installHint {
+    display: none;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: .3rem;
+    padding: .75rem 1rem;
+    font-size: .75rem;
+    color: rgba(255,255,255,0.8);
     text-align: center;
+    line-height: 1.5;
+    background: rgba(0,0,0,0.35);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
   }
-
-  .winner-sub {
-    font-size: 15px;
+  #installHint strong { color: var(--primary); }
+  #installHint .close-hint {
+    display: inline-block;
+    margin-top: .25rem;
+    font-size: .7rem;
     color: var(--muted);
-    text-align: center;
-  }
-
-  .new-game-btn {
-    margin-top: 8px;
-    background: var(--gold);
-    color: var(--bg);
-    border: none;
-    border-radius: 14px;
-    padding: 16px 40px;
-    font-size: 16px;
-    font-weight: 700;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
+    text-decoration: underline;
   }
 
-  .busted-note {
-    font-size: 12px;
-    color: var(--red);
+  /* ── Footer ── */
+  .site-footer {
+    border-top: 1px solid rgba(255,255,255,0.4);
+    padding: .75rem 1rem;
+    font-size: .7rem;
+    color: rgba(255,255,255,0.6);
     text-align: center;
-    margin-top: 2px;
-    min-height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    background: rgba(0,0,0,0.15);
   }
-
-  .mode-info {
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-    margin-top: 4px;
-  }
+  .site-footer img { height: 18px; opacity: .7; filter: brightness(10); }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">Corn<span>hole</span></div>
-  <div class="mode-toggle" onclick="toggleMode()">
-    Vindbetingelse: <span class="pill" id="modePill">Præcis 21</span>
+<!-- Offline -->
+<div id="offlineBanner">⚡ Du er offline — appen virker stadig</div>
+
+<!-- Navbar -->
+<header class="navbar">
+  <a class="navbar-brand" href="https://useful.dk/da">
+    <img src="https://auth.useful.dk/media/public/logo_2.svg" alt="Useful Inc">
+    <span class="sep">/</span>
+    <span class="page-title">Cornhole</span>
+  </a>
+  <div class="navbar-actions">
+    <button class="btn btn-sm btn-link text-error" id="abortBtn" onclick="showAbort()" style="display:none">Afbryd</button>
+    <button class="btn btn-sm btn-link" onclick="toggleMode()">
+      <span class="chip"><span id="modePill" class="label label-primary">Præcis 21</span></span>
+    </button>
   </div>
 </header>
 
-<!-- Score boards -->
-<div class="boards">
-  <div class="board" id="board0">
-    <div class="team-name-wrap">
-      <input class="team-name" id="name0" value="Hold 1" maxlength="10" onclick="this.select()">
-    </div>
-    <div class="score-display" id="score0">0</div>
-    <div class="score-label">point</div>
-    <div class="busted-note" id="bust0"></div>
-  </div>
-  <div class="board" id="board1">
-    <div class="team-name-wrap">
-      <input class="team-name" id="name1" value="Hold 2" maxlength="10" onclick="this.select()">
-    </div>
-    <div class="score-display" id="score1">0</div>
-    <div class="score-label">point</div>
-    <div class="busted-note" id="bust1"></div>
-  </div>
-</div>
+<!-- Main -->
+<main class="main">
 
-<!-- Round input -->
-<div class="round-section">
-  <div class="round-header">
-    <span class="round-label">Runde</span>
-    <span class="round-number" id="roundNum">1</span>
+  <!-- Score cards -->
+  <div class="score-grid">
+    <div class="score-card" id="board0">
+      <input class="team-name-input" id="name0" value="Hold 1" maxlength="10" onclick="this.select()">
+      <div class="score-num" id="score0">0</div>
+      <div class="score-sub">point</div>
+      <div class="bust-label" id="bust0"></div>
+    </div>
+    <div class="score-card" id="board1">
+      <input class="team-name-input" id="name1" value="Hold 2" maxlength="10" onclick="this.select()">
+      <div class="score-num" id="score1">0</div>
+      <div class="score-sub">point</div>
+      <div class="bust-label" id="bust1"></div>
+    </div>
   </div>
-  <div class="inputs-row">
-    <div class="team-input-block">
-      <div class="input-team-label" id="inputLabel0">Hold 1</div>
-      <div class="point-input-wrap">
-        <button class="pt-btn" onclick="change(0,-1)">−</button>
-        <div class="pt-val" id="input0">0</div>
-        <button class="pt-btn" onclick="change(0,1)">+</button>
+
+  <!-- Round input -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Runde</span>
+      <span class="panel-round" id="roundNum">1</span>
+    </div>
+    <div class="panel-body">
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-group-label" id="inputLabel0">Hold 1</div>
+          <div class="counter">
+            <button class="counter-btn" onclick="change(0,-1)">−</button>
+            <div class="counter-val" id="input0">0</div>
+            <button class="counter-btn" onclick="change(0,1)">+</button>
+          </div>
+        </div>
+        <div class="vs">vs</div>
+        <div class="input-group">
+          <div class="input-group-label" id="inputLabel1">Hold 2</div>
+          <div class="counter">
+            <button class="counter-btn" onclick="change(1,-1)">−</button>
+            <div class="counter-val" id="input1">0</div>
+            <button class="counter-btn" onclick="change(1,1)">+</button>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="vs-badge">vs</div>
-    <div class="team-input-block">
-      <div class="input-team-label" id="inputLabel1">Hold 2</div>
-      <div class="point-input-wrap">
-        <button class="pt-btn" onclick="change(1,-1)">−</button>
-        <div class="pt-val" id="input1">0</div>
-        <button class="pt-btn" onclick="change(1,1)">+</button>
-      </div>
+      <button class="btn btn-primary btn-add" onclick="addRound()">Registrér runde</button>
+      <div class="mode-note" id="modeInfo">Vinder ved præcis 21 — bust sender dig tilbage til 15</div>
     </div>
   </div>
-  <button class="add-btn" onclick="addRound()">Registrér runde ›</button>
-  <div class="mode-info" id="modeInfo">Vinder ved præcis 21 — bust sender dig tilbage til 15</div>
-</div>
 
-<!-- History -->
-<div class="history-section">
-  <div class="history-header">Rundehistorik</div>
-  <div class="history-list" id="historyList">
-    <div style="color:var(--muted);font-size:13px;padding:8px 4px;">Ingen runder endnu.</div>
+  <!-- History -->
+  <div>
+    <div class="history-header">Rundehistorik</div>
+    <div class="history-list" id="historyList">
+      <div class="empty-note">Ingen runder endnu.</div>
+    </div>
+  </div>
+
+  <!-- Install hint -->
+  <div id="installHint">
+    <strong>Installer som app på iPhone</strong><br>
+    Tryk på Del → Føj til hjemmeskærm for at bruge uden browserbjælke
+    <br><span class="close-hint" onclick="dismissHint()">Luk</span>
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <img src="https://auth.useful.dk/media/public/logo_2.svg" alt="Useful Inc">
+  © 2026 Useful Inc
+</footer>
+
+<!-- Winner modal -->
+<div class="modal-overlay" id="winModal">
+  <div class="modal-box">
+    <div class="modal-icon">🏆</div>
+    <div class="modal-title" id="winTitle">Hold 1 vinder!</div>
+    <div class="modal-sub" id="winSub">Tillykke!</div>
+    <button class="btn btn-primary" onclick="newGame()" style="width:100%">Ny kamp</button>
   </div>
 </div>
 
-<!-- Winner overlay -->
-<div class="overlay" id="overlay">
-  <div class="winner-badge">🏆</div>
-  <div class="winner-title" id="winnerTitle">Hold 1 vinder!</div>
-  <div class="winner-sub" id="winnerSub">Tillykke!</div>
-  <button class="new-game-btn" onclick="newGame()">Ny kamp</button>
+<!-- Abort confirm sheet -->
+<div class="sheet-overlay" id="abortSheet">
+  <div class="sheet-box">
+    <div class="sheet-title">Afbryd spillet?</div>
+    <div class="sheet-sub">Alle point og runder nulstilles.<br>Dette kan ikke fortrydes.</div>
+    <div class="sheet-btns">
+      <button class="btn" onclick="hideAbort()">Fortsæt</button>
+      <button class="btn btn-error" onclick="abortGame()">Afbryd</button>
+    </div>
+  </div>
 </div>
 
 <script>
-  // State
-  let scores = [0, 0];
-  let roundInputs = [0, 0];
-  let round = 1;
-  let exactMode = true; // true = præcis 21, false = mindst 21
-  let history = [];
-  let gameOver = false;
+// ── PWA: Service Worker via Blob ─────────────────────────────────────────────
+(function(){
+  if(!('serviceWorker' in navigator)) return;
+  const sw = `
+    const C='cornhole-v2';
+    self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll([self.registration.scope])));self.skipWaiting();});
+    self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});
+    self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>{if(r)return r;return fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>r);}));});
+  `;
+  const url = URL.createObjectURL(new Blob([sw],{type:'application/javascript'}));
+  navigator.serviceWorker.register(url,{scope:'./'}).catch(()=>{});
+})();
 
-  // Sync team labels in input area
-  function syncLabels() {
-    document.getElementById('inputLabel0').textContent = document.getElementById('name0').value || 'Hold 1';
-    document.getElementById('inputLabel1').textContent = document.getElementById('name1').value || 'Hold 2';
+// ── PWA: Canvas icon ─────────────────────────────────────────────────────────
+(function(){
+  const c=document.createElement('canvas'); c.width=c.height=192;
+  const x=c.getContext('2d');
+  x.fillStyle='#5755d9'; x.beginPath(); x.roundRect(0,0,192,192,32); x.fill();
+  x.fillStyle='rgba(255,255,255,.15)'; x.beginPath(); x.roundRect(16,16,160,160,20); x.fill();
+  x.fillStyle='#fff'; x.beginPath(); x.arc(96,96,30,0,Math.PI*2); x.fill();
+  x.fillStyle='#5755d9'; x.beginPath(); x.arc(96,96,18,0,Math.PI*2); x.fill();
+  x.strokeStyle='rgba(255,255,255,.8)'; x.lineWidth=4; x.beginPath(); x.arc(96,96,48,0,Math.PI*2); x.stroke();
+  const icon=c.toDataURL('image/png');
+  ['apple-touch-icon','icon'].forEach(r=>{const l=document.createElement('link');l.rel=r;l.href=icon;document.head.appendChild(l);});
+})();
+
+// ── Offline ──────────────────────────────────────────────────────────────────
+const banner=document.getElementById('offlineBanner');
+function upd(){banner.style.display=navigator.onLine?'none':'block';}
+window.addEventListener('online',upd); window.addEventListener('offline',upd); upd();
+
+// ── Install hint (iOS Safari, not standalone) ────────────────────────────────
+if(/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && !localStorage.getItem('ch-hint')){
+  setTimeout(()=>document.getElementById('installHint').style.display='block', 2500);
+}
+function dismissHint(){document.getElementById('installHint').style.display='none'; localStorage.setItem('ch-hint','1');}
+
+// ── State ────────────────────────────────────────────────────────────────────
+let scores=[0,0], inp=[0,0], round=1, exactMode=true, history=[], gameOver=false;
+
+function save(){
+  try{ localStorage.setItem('ch-state', JSON.stringify({
+    scores, round, exactMode, history, gameOver,
+    names:[document.getElementById('name0').value, document.getElementById('name1').value]
+  })); }catch(e){}
+}
+
+function load(){
+  try{
+    const raw=localStorage.getItem('ch-state'); if(!raw) return;
+    const s=JSON.parse(raw);
+    scores=s.scores||[0,0]; round=s.round||1; exactMode=s.exactMode!==undefined?s.exactMode:true;
+    history=s.history||[]; gameOver=s.gameOver||false;
+    if(s.names){ document.getElementById('name0').value=s.names[0]||'Hold 1'; document.getElementById('name1').value=s.names[1]||'Hold 2'; }
+    document.getElementById('modePill').textContent=exactMode?'Præcis 21':'Mindst 21';
+    document.getElementById('modeInfo').textContent=exactMode?'Vinder ved præcis 21 — bust sender dig tilbage til 15':'Vinder ved 21 eller derover';
+    syncLabels(); renderBoards(); renderHistory(); updateAbortBtn();
+    if(gameOver) checkWin();
+  }catch(e){}
+}
+
+function syncLabels(){
+  document.getElementById('inputLabel0').textContent=document.getElementById('name0').value||'Hold 1';
+  document.getElementById('inputLabel1').textContent=document.getElementById('name1').value||'Hold 2';
+}
+document.getElementById('name0').addEventListener('input',()=>{syncLabels();save();});
+document.getElementById('name1').addEventListener('input',()=>{syncLabels();save();});
+
+// ── Logic ────────────────────────────────────────────────────────────────────
+function toggleMode(){
+  exactMode=!exactMode;
+  document.getElementById('modePill').textContent=exactMode?'Præcis 21':'Mindst 21';
+  document.getElementById('modeInfo').textContent=exactMode?'Vinder ved præcis 21 — bust sender dig tilbage til 15':'Vinder ved 21 eller derover';
+  renderBoards(); save();
+}
+
+function change(t,d){ if(gameOver)return; inp[t]=Math.max(0,inp[t]+d); document.getElementById('input'+t).textContent=inp[t]; }
+
+function addRound(){
+  if(gameOver) return;
+  const n0=Math.max(0,inp[0]-inp[1]), n1=Math.max(0,inp[1]-inp[0]);
+  history.push({round,n0,n1});
+  scores[0]+=n0; scores[1]+=n1;
+  document.getElementById('bust0').textContent='';
+  document.getElementById('bust1').textContent='';
+  if(exactMode){
+    if(scores[0]>21){scores[0]=15; document.getElementById('bust0').textContent='BUST → 15';}
+    if(scores[1]>21){scores[1]=15; document.getElementById('bust1').textContent='BUST → 15';}
   }
-  document.getElementById('name0').addEventListener('input', syncLabels);
-  document.getElementById('name1').addEventListener('input', syncLabels);
+  round++; inp=[0,0];
+  document.getElementById('input0').textContent='0';
+  document.getElementById('input1').textContent='0';
+  renderBoards(); renderHistory(); updateAbortBtn(); save(); checkWin();
+}
 
-  function toggleMode() {
-    exactMode = !exactMode;
-    document.getElementById('modePill').textContent = exactMode ? 'Præcis 21' : 'Mindst 21';
-    document.getElementById('modeInfo').textContent = exactMode
-      ? 'Vinder ved præcis 21 — bust sender dig tilbage til 15'
-      : 'Vinder ved 21 eller derover';
-    renderBoards();
+function renderBoards(){
+  for(let i=0;i<2;i++){
+    const el=document.getElementById('score'+i);
+    const b=document.getElementById('board'+i);
+    el.textContent=scores[i];
+    b.classList.remove('winning','busted');
+    if(exactMode&&scores[i]===21) b.classList.add('winning');
+    else if(!exactMode&&scores[i]>=21) b.classList.add('winning');
+    el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),200);
   }
+  document.getElementById('roundNum').textContent=round;
+}
 
-  function change(team, delta) {
-    if (gameOver) return;
-    roundInputs[team] = Math.max(0, roundInputs[team] + delta);
-    document.getElementById('input' + team).textContent = roundInputs[team];
+function renderHistory(){
+  const l=document.getElementById('historyList'); l.innerHTML='';
+  if(!history.length){l.innerHTML='<div class="empty-note">Ingen runder endnu.</div>'; return;}
+  [...history].reverse().forEach(h=>{
+    const d=document.createElement('div'); d.className='h-item';
+    d.innerHTML=`<span class="h-rnd">R${h.round}</span><span class="h-pts ${h.n0>0?'pos':'zero'}">+${h.n0}</span><span class="h-sep">—</span><span class="h-pts ${h.n1>0?'pos':'zero'}">+${h.n1}</span>`;
+    l.appendChild(d);
+  });
+}
+
+function checkWin(){
+  let w=-1;
+  if(exactMode){ if(scores[0]===21) w=0; else if(scores[1]===21) w=1; }
+  else{
+    if(scores[0]>=21&&scores[1]>=21) w=scores[0]>=scores[1]?0:1;
+    else if(scores[0]>=21) w=0;
+    else if(scores[1]>=21) w=1;
   }
-
-  function addRound() {
-    if (gameOver) return;
-
-    const p0 = roundInputs[0];
-    const p1 = roundInputs[1];
-
-    // Cancel scoring: only net points count
-    let net0 = Math.max(0, p0 - p1);
-    let net1 = Math.max(0, p1 - p0);
-
-    history.push({ round, net0, net1, raw0: p0, raw1: p1 });
-
-    // Apply scores
-    scores[0] += net0;
-    scores[1] += net1;
-
-    // Bust check (exact mode)
-    if (exactMode) {
-      if (scores[0] > 21) { scores[0] = 15; }
-      if (scores[1] > 21) { scores[1] = 15; }
-    }
-
-    round++;
-    roundInputs = [0, 0];
-    document.getElementById('input0').textContent = '0';
-    document.getElementById('input1').textContent = '0';
-
-    renderBoards();
-    renderHistory();
-    checkWin();
+  if(w>=0){
+    gameOver=true;
+    const name=document.getElementById('name'+w).value||'Hold '+(w+1);
+    document.getElementById('winTitle').textContent=name+' vinder!';
+    document.getElementById('winSub').textContent=scores[w]+' point efter '+(round-1)+' runder';
+    document.getElementById('winModal').classList.add('active');
+    updateAbortBtn(); save();
   }
+}
 
-  function renderBoards() {
-    for (let i = 0; i < 2; i++) {
-      const s = scores[i];
-      const el = document.getElementById('score' + i);
-      const board = document.getElementById('board' + i);
-      const bust = document.getElementById('bust' + i);
+function newGame(){
+  scores=[0,0]; inp=[0,0]; round=1; history=[]; gameOver=false;
+  ['score0','score1','input0','input1'].forEach(id=>document.getElementById(id).textContent='0');
+  ['board0','board1'].forEach(id=>document.getElementById(id).classList.remove('winning','busted'));
+  ['bust0','bust1'].forEach(id=>document.getElementById(id).textContent='');
+  document.getElementById('roundNum').textContent='1';
+  document.getElementById('winModal').classList.remove('active');
+  renderHistory(); updateAbortBtn(); localStorage.removeItem('ch-state');
+}
 
-      el.textContent = s;
-      board.classList.remove('winning', 'busted');
-      bust.textContent = '';
+function updateAbortBtn(){
+  const show=(round>1||scores[0]>0||scores[1]>0)&&!gameOver;
+  document.getElementById('abortBtn').style.display=show?'':'none';
+}
 
-      if (exactMode && s > 21) {
-        // handled already but show visually if needed
-      } else if (!exactMode && s >= 21) {
-        board.classList.add('winning');
-      } else if (exactMode && s === 21) {
-        board.classList.add('winning');
-      }
+function showAbort(){ document.getElementById('abortSheet').classList.add('active'); }
+function hideAbort(){ document.getElementById('abortSheet').classList.remove('active'); }
+function abortGame(){ hideAbort(); newGame(); }
 
-      // bump animation
-      el.classList.add('bump');
-      setTimeout(() => el.classList.remove('bump'), 200);
-    }
-    document.getElementById('roundNum').textContent = round;
-  }
-
-  function renderHistory() {
-    const list = document.getElementById('historyList');
-    list.innerHTML = '';
-    if (history.length === 0) {
-      list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 4px;">Ingen runder endnu.</div>';
-      return;
-    }
-    // Show newest first
-    [...history].reverse().forEach(h => {
-      const item = document.createElement('div');
-      item.className = 'history-item';
-      item.innerHTML = `
-        <span class="h-round">R${h.round}</span>
-        <span class="h-pts ${h.net0 > 0 ? 'positive' : 'zero'}">+${h.net0}</span>
-        <span class="h-sep">—</span>
-        <span class="h-pts ${h.net1 > 0 ? 'positive' : 'zero'}">+${h.net1}</span>
-      `;
-      list.appendChild(item);
-    });
-  }
-
-  function checkWin() {
-    let winner = -1;
-    if (exactMode) {
-      if (scores[0] === 21) winner = 0;
-      else if (scores[1] === 21) winner = 1;
-    } else {
-      if (scores[0] >= 21 && scores[1] >= 21) {
-        winner = scores[0] >= scores[1] ? 0 : 1;
-      } else if (scores[0] >= 21) winner = 0;
-      else if (scores[1] >= 21) winner = 1;
-    }
-
-    if (winner >= 0) {
-      gameOver = true;
-      const name = document.getElementById('name' + winner).value || ('Hold ' + (winner+1));
-      document.getElementById('winnerTitle').textContent = name + ' vinder!';
-      document.getElementById('winnerSub').textContent = `${scores[winner]} point efter ${round-1} runder`;
-      document.getElementById('overlay').classList.add('show');
-    }
-  }
-
-  function newGame() {
-    scores = [0, 0];
-    roundInputs = [0, 0];
-    round = 1;
-    history = [];
-    gameOver = false;
-    document.getElementById('input0').textContent = '0';
-    document.getElementById('input1').textContent = '0';
-    document.getElementById('score0').textContent = '0';
-    document.getElementById('score1').textContent = '0';
-    document.getElementById('board0').classList.remove('winning','busted');
-    document.getElementById('board1').classList.remove('winning','busted');
-    document.getElementById('bust0').textContent = '';
-    document.getElementById('bust1').textContent = '';
-    document.getElementById('roundNum').textContent = '1';
-    document.getElementById('overlay').classList.remove('show');
-    renderHistory();
-  }
+// ── Boot ─────────────────────────────────────────────────────────────────────
+load();
 </script>
 </body>
-</html> 
+</html>
