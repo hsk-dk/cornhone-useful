@@ -107,6 +107,18 @@
   }
   .score-card.winning { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(87,85,217,.15); }
   .score-card.busted  { border-color: var(--error);   box-shadow: 0 0 0 3px rgba(232,86,0,.12); }
+  .score-card.leading { border-color: #32b643; box-shadow: 0 0 0 3px rgba(50,182,67,.13); }
+  .score-card.leading .score-num { color: #32b643; }
+  .score-card.leading::after {
+    content: '▲ Leder';
+    display: block;
+    font-size: .6rem;
+    font-weight: 700;
+    color: #32b643;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-top: .1rem;
+  }
 
   .team-name-input {
     font-size: .65rem; font-weight: 700; color: var(--muted);
@@ -575,7 +587,10 @@ function addRound(){
   const raw0=inp[0], raw1=inp[1];
   const pre=[...scores];
   const {n0,n1,s0,s1,bust0,bust1}=applyRound(raw0,raw1,pre);
-  history.push({round, raw0, raw1, n0, n1, preScores:pre});
+  // store previous bust state so we can restore it on delete
+  const prevBust0=document.getElementById('bust0').textContent;
+  const prevBust1=document.getElementById('bust1').textContent;
+  history.push({round, raw0, raw1, n0, n1, preScores:pre, prevBust0, prevBust1, bust0, bust1});
   scores=[s0,s1]; round++;
   inp=[0,0];
   document.getElementById('input0').textContent='0';
@@ -586,13 +601,15 @@ function addRound(){
 }
 
 function renderBoards(){
+  const leading = scores[0]===scores[1] ? -1 : (scores[0]>scores[1] ? 0 : 1);
   for(let i=0;i<2;i++){
     const el=document.getElementById('score'+i);
     const b=document.getElementById('board'+i);
     el.textContent=scores[i];
-    b.classList.remove('winning','busted');
+    b.classList.remove('winning','busted','leading');
     if(exactMode&&scores[i]===21) b.classList.add('winning');
     else if(!exactMode&&scores[i]>=21) b.classList.add('winning');
+    else if(leading===i && scores[i]>0) b.classList.add('leading');
     el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),200);
   }
   document.getElementById('roundNum').textContent=round;
@@ -681,12 +698,9 @@ function editChange(t,d){
 
 function saveEdit(){
   if(!history.length) return;
-  // Roll back last round
   const h=history[history.length-1];
-  scores=[...h.preScores];
-  // Re-apply with new raw values
   const {n0,n1,s0,s1,bust0,bust1}=applyRound(editInp[0],editInp[1],h.preScores);
-  h.raw0=editInp[0]; h.raw1=editInp[1]; h.n0=n0; h.n1=n1;
+  h.raw0=editInp[0]; h.raw1=editInp[1]; h.n0=n0; h.n1=n1; h.bust0=bust0; h.bust1=bust1;
   scores=[s0,s1];
   document.getElementById('bust0').textContent=bust0?'BUST → 15':'';
   document.getElementById('bust1').textContent=bust1?'BUST → 15':'';
@@ -700,8 +714,10 @@ function confirmDelete(){
   const h=history.pop();
   scores=[...h.preScores];
   round=h.round;
-  document.getElementById('bust0').textContent='';
-  document.getElementById('bust1').textContent='';
+  // restore bust state from the round before the deleted one
+  const prev=history[history.length-1];
+  document.getElementById('bust0').textContent=prev ? (prev.bust0?'BUST → 15':'') : '';
+  document.getElementById('bust1').textContent=prev ? (prev.bust1?'BUST → 15':'') : '';
   hideEdit();
   renderBoards(); renderHistory(); updateAbortBtn(); save();
 }
