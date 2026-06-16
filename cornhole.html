@@ -461,7 +461,26 @@
       <button class="btn" onclick="hideEdit()">Annuller</button>
       <button class="btn btn-primary" onclick="saveEdit()">Gem rettelse</button>
     </div>
-    <button class="btn btn-error" style="width:100%" onclick="confirmDelete()">Slet denne runde</button>
+    <div id="deleteConfirm" style="display:none; background:rgba(232,86,0,.08); border:1px solid rgba(232,86,0,.25); border-radius:.75rem; padding:.75rem; text-align:center;">
+      <div style="font-size:.8rem; font-weight:600; color:var(--error); margin-bottom:.5rem;">Er du sikker? Scoren rulles tilbage.</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
+        <button class="btn" onclick="document.getElementById('deleteConfirm').style.display='none'">Annuller</button>
+        <button class="btn btn-error" onclick="confirmDelete()">Ja, slet</button>
+      </div>
+    </div>
+    <button class="btn btn-error" id="deleteBtn" style="width:100%" onclick="document.getElementById('deleteConfirm').style.display='block';this.style.display='none'">Slet denne runde</button>
+  </div>
+</div>
+
+<!-- Delete confirm sheet -->
+<div class="sheet-overlay" id="deleteSheet">
+  <div class="sheet-box">
+    <div class="sheet-title" id="deleteSheetTitle">Slet runde?</div>
+    <div class="sheet-sub">Pointene fjernes og scoren rulles tilbage.</div>
+    <div class="sheet-btns">
+      <button class="btn" onclick="hideDelete()">Annuller</button>
+      <button class="btn btn-error" onclick="confirmDelete()">Slet runde</button>
+    </div>
   </div>
 </div>
 
@@ -649,7 +668,11 @@ function showEdit(){
   syncLabels();
   document.getElementById('editSheet').classList.add('active');
 }
-function hideEdit(){ document.getElementById('editSheet').classList.remove('active'); }
+function hideEdit(){
+  document.getElementById('editSheet').classList.remove('active');
+  document.getElementById('deleteConfirm').style.display='none';
+  document.getElementById('deleteBtn').style.display='';
+}
 
 function editChange(t,d){
   editInp[t]=Math.max(0,editInp[t]+d);
@@ -672,39 +695,14 @@ function saveEdit(){
 }
 
 // ── Delete last round ─────────────────────────────────────────────────────────
-function showDeleteConfirm(){
-  // Reuse the edit sheet but only show delete
-  if(!history.length) return;
-  const h=history[history.length-1];
-  // Show abort sheet styled for delete
-  document.getElementById('abortSheet').classList.add('active');
-  // Swap content temporarily via a flag
-  _deleteMode=true;
-  document.querySelector('#abortSheet .sheet-title').textContent='Slet runde '+h.round+'?';
-  document.querySelector('#abortSheet .sheet-sub').textContent='Pointene fra denne runde fjernes og scoren rulles tilbage.';
-  document.querySelector('#abortSheet .sheet-btns').innerHTML=
-    `<button class="btn" onclick="cancelDelete()">Annuller</button>
-     <button class="btn btn-error" onclick="confirmDelete()">Slet runde</button>`;
-}
-let _deleteMode=false;
-function cancelDelete(){
-  _deleteMode=false;
-  // restore abort sheet content
-  document.querySelector('#abortSheet .sheet-title').textContent='Afbryd spillet?';
-  document.querySelector('#abortSheet .sheet-sub').textContent='Alle point og runder nulstilles.\nDette kan ikke fortrydes.';
-  document.querySelector('#abortSheet .sheet-btns').innerHTML=
-    `<button class="btn" onclick="hideAbort()">Fortsæt</button>
-     <button class="btn btn-error" onclick="abortGame()">Afbryd</button>`;
-  hideAbort();
-}
 function confirmDelete(){
-  if(!history.length){cancelDelete();return;}
+  if(!history.length) return;
   const h=history.pop();
   scores=[...h.preScores];
   round=h.round;
   document.getElementById('bust0').textContent='';
   document.getElementById('bust1').textContent='';
-  cancelDelete();
+  hideEdit();
   renderBoards(); renderHistory(); updateAbortBtn(); save();
 }
 
