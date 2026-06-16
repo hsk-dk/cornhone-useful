@@ -301,6 +301,29 @@
   .modal-title { font-size: 1.4rem; font-weight: 700; color: var(--gray-dark); }
   .modal-sub { font-size: .85rem; color: var(--muted); }
 
+  .stats-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .4rem .6rem;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: .75rem 0;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .1rem;
+    padding: .4rem .3rem;
+    background: var(--gray-light);
+    border-radius: .6rem;
+  }
+  .stat-label { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); text-align: center; }
+  .stat-val   { font-size: 1.1rem; font-weight: 700; color: var(--gray-dark); }
+  .stat-val.highlight { color: var(--primary); }
+  .stat-wide  { grid-column: 1 / -1; }
+
   /* ── Install hint ── */
   #installHint {
     display: none;
@@ -429,6 +452,10 @@
     <div class="modal-icon">🏆</div>
     <div class="modal-title" id="winTitle">Hold 1 vinder!</div>
     <div class="modal-sub" id="winSub">Tillykke!</div>
+
+    <!-- Stats grid -->
+    <div class="stats-grid" id="statsGrid"></div>
+
     <button class="btn btn-primary" onclick="newGame()" style="width:100%">Ny kamp</button>
   </div>
 </div>
@@ -584,6 +611,8 @@ function applyRound(raw0, raw1, preScores){
 
 function addRound(){
   if(gameOver) return;
+  // Haptic feedback
+  if(navigator.vibrate) navigator.vibrate(10);
   const raw0=inp[0], raw1=inp[1];
   const pre=[...scores];
   const {n0,n1,s0,s1,bust0,bust1}=applyRound(raw0,raw1,pre);
@@ -644,9 +673,47 @@ function checkWin(){
   }
   if(w>=0){
     gameOver=true;
-    const name=document.getElementById('name'+w).value||'Hold '+(w+1);
-    document.getElementById('winTitle').textContent=name+' vinder!';
+    const name0=document.getElementById('name0').value||'Hold 1';
+    const name1=document.getElementById('name1').value||'Hold 2';
+    const wName=w===0?name0:name1;
+    document.getElementById('winTitle').textContent=wName+' vinder!';
     document.getElementById('winSub').textContent=scores[w]+' point efter '+(round-1)+' runder';
+
+    // ── Compute stats ──
+    const totalRounds=history.length;
+    const tot0=history.reduce((s,h)=>s+h.n0,0);
+    const tot1=history.reduce((s,h)=>s+h.n1,0);
+    const best0=history.reduce((m,h)=>Math.max(m,h.n0),0);
+    const best1=history.reduce((m,h)=>Math.max(m,h.n1),0);
+    const busts0=history.filter(h=>h.bust0).length;
+    const busts1=history.filter(h=>h.bust1).length;
+    const zeros0=history.filter(h=>h.n0===0).length;
+    const zeros1=history.filter(h=>h.n1===0).length;
+    const bestRound=history.reduce((b,h)=>{const t=h.n0+h.n1; return t>b.t?{t,r:h.round}:b;},{t:-1,r:0});
+
+    function statRow(label, v0, v1, highlightWinner=false){
+      const h0=highlightWinner&&w===0, h1=highlightWinner&&w===1;
+      return `
+        <div class="stat-item">
+          <div class="stat-label">${name0}<br>${label}</div>
+          <div class="stat-val ${h0?'highlight':''}">${v0}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">${name1}<br>${label}</div>
+          <div class="stat-val ${h1?'highlight':''}">${v1}</div>
+        </div>`;
+    }
+
+    document.getElementById('statsGrid').innerHTML =
+      statRow('Samlede point', tot0, tot1, true) +
+      statRow('Bedste runde', best0, best1) +
+      statRow('Scoringsrunder', totalRounds-zeros0, totalRounds-zeros1) +
+      (exactMode ? statRow('Busts', busts0, busts1) : '') +
+      `<div class="stat-item stat-wide">
+         <div class="stat-label">Mest aktive runde</div>
+         <div class="stat-val">R${bestRound.r} (${bestRound.t} net-point)</div>
+       </div>`;
+
     document.getElementById('winModal').classList.add('active');
     updateAbortBtn(); save();
   }
