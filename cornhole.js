@@ -6,6 +6,8 @@ const VIBRATE_MS = 10;
 const SCORE_BUMP_MS = 200;
 const TEAM_DEFAULTS = ['Hold 1', 'Hold 2'];
 const EMPTY_HISTORY_TEXT = 'Ingen runder endnu.';
+const BUST_MESSAGE = `BUST → ${BUST_SCORE}`;
+const EDIT_ROUND_TEXT = 'Ret runde';
 
 const MODE_COPY = {
   true: {
@@ -100,7 +102,7 @@ function setCounterTexts(elements, values) {
 
 function setBustLabels(busts) {
   els.busts.forEach((el, index) => {
-    setText(el, busts[index] ? `BUST → ${BUST_SCORE}` : '');
+    setText(el, busts[index] ? BUST_MESSAGE : '');
   });
 }
 
@@ -347,8 +349,8 @@ function renderBoards() {
 function createHistoryEditButton() {
   const button = document.createElement('button');
   button.className = 'h-btn edt';
-  button.title = 'Ret runde';
-  button.setAttribute('aria-label', 'Ret seneste runde');
+  button.title = EDIT_ROUND_TEXT;
+  button.setAttribute('aria-label', EDIT_ROUND_TEXT);
   setText(button, '✎');
   button.addEventListener('click', showEdit);
   return button;
