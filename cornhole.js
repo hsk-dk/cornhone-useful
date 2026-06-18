@@ -74,7 +74,7 @@ const editState = {
   input: [0, 0]
 };
 
-// Each history entry: { round, raw0, raw1, n0, n1, preScores, prevBust0, prevBust1, bust0, bust1 }
+// Each history entry: { round, raw0, raw1, n0, n1, preScores, bust0, bust1 }
 
 function getModeCopy(exactMode) {
   return MODE_COPY[String(exactMode)];
@@ -114,8 +114,10 @@ function renderMode() {
 
 function renderLabels() {
   const names = getTeamNames();
-  [...els.inputLabels, ...els.editLabels].forEach((el, index) => {
-    setText(el, names[index % 2]);
+  [els.inputLabels, els.editLabels].forEach(labelGroup => {
+    labelGroup.forEach((el, index) => {
+      setText(el, names[index]);
+    });
   });
 }
 
@@ -228,6 +230,10 @@ function getWinner(scores, exactMode) {
   return -1;
 }
 
+function isWinningScore(score, exactMode) {
+  return exactMode ? score === WIN_SCORE : score >= WIN_SCORE;
+}
+
 function computeGameStats(history) {
   const totalRounds = history.length;
   const totals = [0, 0];
@@ -333,7 +339,7 @@ function renderBoards() {
     const boardEl = els.boards[index];
     boardEl.classList.remove('winning', 'busted', 'leading');
 
-    if ((state.exactMode && state.scores[index] === WIN_SCORE) || (!state.exactMode && state.scores[index] >= WIN_SCORE)) {
+    if (isWinningScore(state.scores[index], state.exactMode)) {
       boardEl.classList.add('winning');
     } else if (leading === index && state.scores[index] > 0) {
       boardEl.classList.add('leading');
@@ -453,8 +459,6 @@ function addRound() {
     n0: roundResult.n0,
     n1: roundResult.n1,
     preScores,
-    prevBust0: els.busts[0].textContent,
-    prevBust1: els.busts[1].textContent,
     bust0: roundResult.bust0,
     bust1: roundResult.bust1
   });
