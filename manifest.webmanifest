@@ -1,0 +1,9 @@
+{
+  "name": "Cornhole",
+  "short_name": "Cornhole",
+  "start_url": "./cornhole.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": []
+}

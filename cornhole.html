@@ -1,796 +1,160 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Cornhole">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#ffffff">
-<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiQ29ybmhvbGUiLCJzaG9ydF9uYW1lIjoiQ29ybmhvbGUiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiI2ZmZmZmZiIsIm9yaWVudGF0aW9uIjoicG9ydHJhaXQifQ==">
-<title>Cornhole</title>
-<link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
-<style>
-  :root {
-    --primary:   #5755d9;
-    --error:     #e85600;
-    --gray-dark: #3b4351;
-    --gray:      #acb3c2;
-    --gray-light:#f8f9fa;
-    --border:    #dadee4;
-    --text:      #3b4351;
-    --muted:     #acb3c2;
-    --r:         1rem;       /* global border-radius */
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cornhole">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
+  <title>Cornhole</title>
 
-  *, *::before, *::after { box-sizing: border-box; }
-
-  html {
-    background: #2a3040 url('https://auth.useful.dk/media/public/background.jpg') center top / cover fixed no-repeat;
-  }
-  html, body {
-    margin: 0; padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: var(--text);
-    -webkit-tap-highlight-color: transparent;
-    overscroll-behavior: none;
-  }
-  body { display: flex; flex-direction: column; min-height: 100dvh; background: transparent; }
-
-  /* ── Offline ── */
-  #offlineBanner { display:none; background:var(--error); color:#fff; text-align:center; font-size:.75rem; font-weight:600; padding:5px 1rem; }
-
-  /* ── Navbar ── */
-  .navbar {
-    background: rgba(255,255,255,0.84);
-    -webkit-backdrop-filter: blur(18px) saturate(1.4);
-    backdrop-filter: blur(18px) saturate(1.4);
-    border-bottom: 1px solid rgba(255,255,255,0.5);
-    padding: 0 1rem;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky; top: 0; z-index: 50;
-  }
-  .navbar-brand {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 1rem; font-weight: 600; color: var(--gray-dark); text-decoration: none;
-  }
-  .navbar-brand img { height: 28px; width: auto; }
-  .navbar-brand .sep { color: var(--border); font-weight: 300; font-size: 1.2rem; }
-  .navbar-brand .page-title { color: var(--gray-dark); font-weight: 600; }
-
-  /* Navbar right: mode pill + abort icon — tight, never wraps */
-  .navbar-right {
-    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-  }
-  .mode-btn {
-    background: none; border: none; padding: 0; cursor: pointer; line-height: 1;
-  }
-  /* abort: small icon button, only visible mid-game */
-  .abort-icon-btn {
-    display: none;
-    background: none; border: none; cursor: pointer;
-    width: 30px; height: 30px;
-    align-items: center; justify-content: center;
-    border-radius: 50%;
-    color: var(--muted);
-    font-size: 1rem;
-    transition: background .15s, color .15s;
-    padding: 0;
-  }
-  .abort-icon-btn:active { background: rgba(232,86,0,.1); color: var(--error); }
-  .abort-icon-btn.visible { display: flex; }
-
-  /* ── Main ── */
-  .main {
-    flex: 1;
-    padding: 1rem 1rem max(env(safe-area-inset-bottom), 1.5rem);
-    max-width: 540px; width: 100%; margin: 0 auto;
-    display: flex; flex-direction: column; gap: 1rem;
-  }
-
-  /* ── Score cards ── */
-  .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-
-  .score-card {
-    border: 1.5px solid rgba(255,255,255,0.6);
-    border-radius: var(--r);
-    padding: 1.1rem .75rem 1rem;
-    display: flex; flex-direction: column; align-items: center; gap: .2rem;
-    background: rgba(255,255,255,0.80);
-    -webkit-backdrop-filter: blur(14px) saturate(1.3);
-    backdrop-filter: blur(14px) saturate(1.3);
-    transition: border-color .2s, box-shadow .2s;
-  }
-  .score-card.winning { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(87,85,217,.15); }
-  .score-card.busted  { border-color: var(--error);   box-shadow: 0 0 0 3px rgba(232,86,0,.12); }
-  .score-card.leading { border-color: #32b643; box-shadow: 0 0 0 3px rgba(50,182,67,.13); }
-  .score-card.leading .score-num { color: #32b643; }
-  .score-card.leading::after {
-    content: '▲ Leder';
-    display: block;
-    font-size: .6rem;
-    font-weight: 700;
-    color: #32b643;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    margin-top: .1rem;
-  }
-
-  .team-name-input {
-    font-size: .65rem; font-weight: 700; color: var(--muted);
-    text-transform: uppercase; letter-spacing: .08em;
-    background: transparent; border: none; outline: none;
-    width: 100%; text-align: center; cursor: pointer; font-family: inherit; padding: 0;
-  }
-  .team-name-input:focus { color: var(--primary); }
-
-  .score-num {
-    font-size: 4rem; font-weight: 700; line-height: 1;
-    color: var(--gray-dark);
-    transition: transform .15s cubic-bezier(.34,1.56,.64,1);
-    font-variant-numeric: tabular-nums;
-  }
-  .score-num.bump { transform: scale(1.12); }
-  .score-card.winning .score-num { color: var(--primary); }
-  .score-card.busted  .score-num { color: var(--error); }
-  .score-sub { font-size: .65rem; color: var(--muted); }
-  .bust-label { font-size: .65rem; font-weight: 700; color: var(--error); min-height: 14px; text-align: center; }
-
-  /* ── Panel (round input) ── */
-  .panel {
-    border: 1.5px solid rgba(255,255,255,0.6);
-    border-radius: var(--r);
-    background: rgba(255,255,255,0.80);
-    -webkit-backdrop-filter: blur(14px) saturate(1.3);
-    backdrop-filter: blur(14px) saturate(1.3);
-    overflow: hidden;
-  }
-  .panel-header {
-    padding: .6rem 1rem;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .panel-title { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
-  .panel-round { font-size: .75rem; font-weight: 600; color: var(--primary); }
-  .panel-body { padding: .9rem 1rem 1rem; }
-
-  .input-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: .5rem; align-items: center; }
-  .input-group { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
-  .input-group-label { font-size: .65rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-
-  .counter {
-    display: flex; align-items: center;
-    border: 1px solid var(--border);
-    border-radius: .75rem;
-    overflow: hidden; width: 100%;
-    background: #fff;
-  }
-  .counter-btn {
-    background: var(--gray-light); border: none; color: var(--gray-dark);
-    font-size: 1.4rem; font-weight: 300;
-    width: 44px; height: 54px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: background .1s; line-height: 1;
-  }
-  .counter-btn:active { background: var(--border); }
-  .counter-val { flex: 1; text-align: center; font-size: 1.5rem; font-weight: 700; color: var(--gray-dark); font-variant-numeric: tabular-nums; }
-
-  .vs { font-size: .8rem; color: var(--muted); text-align: center; font-style: italic; }
-
-  .btn-add { margin-top: .75rem; width: 100%; border-radius: .75rem !important; }
-  .mode-note { margin-top: .5rem; font-size: .7rem; color: var(--muted); text-align: center; }
-
-  /* ── History ── */
-  .history-wrap {
-    border: 1.5px solid rgba(255,255,255,0.6);
-    border-radius: var(--r);
-    background: rgba(255,255,255,0.80);
-    -webkit-backdrop-filter: blur(14px) saturate(1.3);
-    backdrop-filter: blur(14px) saturate(1.3);
-    overflow: hidden;
-  }
-  .history-header-bar {
-    padding: .55rem 1rem;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .history-title { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
-
-  .history-list { display: flex; flex-direction: column; }
-
-  .h-item {
-    display: grid;
-    grid-template-columns: 28px 1fr 14px 1fr auto;
-    align-items: center;
-    gap: .4rem;
-    padding: .55rem 1rem;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-    font-size: .8rem;
-    animation: fadeUp .18s ease;
-  }
-  .h-item:last-child { border-bottom: none; }
-
-  /* latest round gets subtle highlight */
-  .h-item.latest { background: rgba(87,85,217,0.04); }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .h-rnd { font-size: .65rem; font-weight: 600; color: var(--muted); }
-  .h-pts { font-weight: 700; text-align: center; }
-  .h-pts.pos  { color: var(--primary); }
-  .h-pts.zero { color: var(--muted); }
-  .h-sep { font-size: .65rem; color: var(--muted); text-align: center; }
-
-  /* edit/delete controls on last row */
-  .h-actions { display: flex; gap: 4px; justify-content: flex-end; }
-  .h-btn {
-    background: none; border: none; cursor: pointer;
-    font-size: .75rem; color: var(--muted);
-    padding: 2px 5px; border-radius: .4rem;
-    transition: background .1s, color .1s;
-    line-height: 1.4;
-  }
-  .h-btn:active { background: rgba(0,0,0,.06); }
-  .h-btn.del:active { color: var(--error); }
-  .h-btn.edt:active { color: var(--primary); }
-
-  .empty-note { font-size: .8rem; color: var(--muted); padding: .75rem 1rem; }
-
-  /* ── Edit sheet ── */
-  .sheet-overlay {
-    position: fixed; inset: 0;
-    background: rgba(59,67,81,.4);
-    display: flex; align-items: flex-end; justify-content: center;
-    padding: 0 1rem max(env(safe-area-inset-bottom), 1rem);
-    z-index: 300;
-    opacity: 0; pointer-events: none; transition: opacity .2s;
-  }
-  .sheet-overlay.active { opacity: 1; pointer-events: all; }
-
-  .sheet-box {
-    background: rgba(255,255,255,0.96);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    border-radius: var(--r);
-    padding: 1.25rem 1.25rem 1.1rem;
-    width: 100%; max-width: 420px;
-    display: flex; flex-direction: column; gap: .75rem;
-    transform: translateY(20px);
-    transition: transform .22s cubic-bezier(.34,1.3,.64,1);
-  }
-  .sheet-overlay.active .sheet-box { transform: translateY(0); }
-
-  .sheet-title { font-size: 1rem; font-weight: 700; color: var(--gray-dark); text-align: center; }
-  .sheet-sub   { font-size: .8rem; color: var(--muted); text-align: center; line-height: 1.5; margin-top: -.25rem; }
-  .sheet-btns  { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-
-  /* edit round inputs inside sheet */
-  .edit-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: .5rem; align-items: center; }
-
-  /* ── Winner modal ── */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(59,67,81,.5);
-    display: flex; align-items: center; justify-content: center;
-    padding: 1rem; z-index: 400;
-    opacity: 0; pointer-events: none; transition: opacity .25s;
-  }
-  .modal-overlay.active { opacity: 1; pointer-events: all; }
-
-  .modal-box {
-    background: rgba(255,255,255,0.94);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    border-radius: var(--r);
-    padding: 2rem 1.5rem 1.5rem;
-    max-width: 340px; width: 100%;
-    text-align: center;
-    display: flex; flex-direction: column; align-items: center; gap: 1rem;
-    transform: scale(.95);
-    transition: transform .25s cubic-bezier(.34,1.3,.64,1);
-  }
-  .modal-overlay.active .modal-box { transform: scale(1); }
-  .modal-icon { font-size: 3.5rem; line-height: 1; }
-  .modal-title { font-size: 1.4rem; font-weight: 700; color: var(--gray-dark); }
-  .modal-sub { font-size: .85rem; color: var(--muted); }
-
-  .stats-grid {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: .4rem .6rem;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    padding: .75rem 0;
-  }
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: .1rem;
-    padding: .4rem .3rem;
-    background: var(--gray-light);
-    border-radius: .6rem;
-  }
-  .stat-label { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); text-align: center; }
-  .stat-val   { font-size: 1.1rem; font-weight: 700; color: var(--gray-dark); }
-  .stat-val.highlight { color: var(--primary); }
-  .stat-wide  { grid-column: 1 / -1; }
-
-  /* ── Install hint ── */
-  #installHint {
-    display: none;
-    border: 1.5px solid rgba(255,255,255,0.5);
-    border-radius: var(--r);
-    padding: .75rem 1rem;
-    font-size: .75rem;
-    color: rgba(255,255,255,0.85);
-    text-align: center; line-height: 1.5;
-    background: rgba(0,0,0,0.35);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-  }
-  #installHint strong { color: #fff; }
-  #installHint .close-hint { display:inline-block; margin-top:.25rem; font-size:.7rem; color:rgba(255,255,255,.6); cursor:pointer; text-decoration:underline; }
-
-  /* ── Footer ── */
-  .site-footer {
-    border-top: 1px solid rgba(255,255,255,0.3);
-    padding: .75rem 1rem;
-    font-size: .7rem; color: rgba(255,255,255,0.55);
-    text-align: center; display: flex; align-items: center; justify-content: center; gap: .5rem;
-    background: rgba(0,0,0,0.12);
-  }
-  .site-footer img { height: 18px; opacity: .6; filter: brightness(10); }
-
-  /* Spectre overrides for border-radius */
-  .btn { border-radius: .75rem !important; }
-  .label { border-radius: .5rem !important; }
-</style>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+  <link rel="stylesheet" href="./cornhole.css">
 </head>
 <body>
+  <div id="offlineBanner" aria-live="polite">⚡ Du er offline — appen virker stadig</div>
 
-<div id="offlineBanner">⚡ Du er offline — appen virker stadig</div>
+  <header class="navbar">
+    <a class="navbar-brand" href="https://useful.dk/da" aria-label="Gå til Useful hjemmeside">
+      <span class="page-title">Cornhole</span>
+    </a>
+    <div class="navbar-right">
+      <button class="abort-icon-btn" id="abortBtn" title="Afbryd spil" aria-label="Afbryd spil">✕</button>
+      <button class="mode-btn" id="modeBtn" title="Skift vindbetingelse" aria-label="Skift vindbetingelse">
+        <span id="modePill" class="label label-primary">Præcis 21</span>
+      </button>
+    </div>
+  </header>
 
-<!-- Navbar -->
-<header class="navbar">
-  <a class="navbar-brand" href="https://useful.dk/da">
-    <span class="page-title">Cornhole</span>
-  </a>
-  <div class="navbar-right">
-    <!-- Abort: small ✕ icon, only shown mid-game -->
-    <button class="abort-icon-btn" id="abortBtn" onclick="showAbort()" title="Afbryd spil" aria-label="Afbryd spil">✕</button>
-    <!-- Mode toggle -->
-    <button class="mode-btn" onclick="toggleMode()" title="Skift vindbetingelse">
-      <span id="modePill" class="label label-primary">Præcis 21</span>
-    </button>
+  <main class="main">
+    <section class="score-grid" aria-label="Scoreoversigt">
+      <div class="score-card" id="board0">
+        <input class="team-name-input" id="name0" value="Hold 1" maxlength="10" autocomplete="off" aria-label="Hold 1 navn">
+        <div class="score-num" id="score0" aria-live="polite">0</div>
+        <div class="score-sub">point</div>
+        <div class="bust-label" id="bust0" aria-live="polite"></div>
+      </div>
+      <div class="score-card" id="board1">
+        <input class="team-name-input" id="name1" value="Hold 2" maxlength="10" autocomplete="off" aria-label="Hold 2 navn">
+        <div class="score-num" id="score1" aria-live="polite">0</div>
+        <div class="score-sub">point</div>
+        <div class="bust-label" id="bust1" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="roundHeading">
+      <div class="panel-header">
+        <span class="panel-title" id="roundHeading">Runde</span>
+        <span class="panel-round" id="roundNum">1</span>
+      </div>
+      <div class="panel-body">
+        <div class="input-row">
+          <div class="input-group">
+            <div class="input-group-label" id="inputLabel0">Hold 1</div>
+            <div class="counter">
+              <button class="counter-btn" id="minus0" aria-label="Sænk Hold 1 input">−</button>
+              <div class="counter-val" id="input0">0</div>
+              <button class="counter-btn" id="plus0" aria-label="Hæv Hold 1 input">+</button>
+            </div>
+          </div>
+          <div class="vs">vs</div>
+          <div class="input-group">
+            <div class="input-group-label" id="inputLabel1">Hold 2</div>
+            <div class="counter">
+              <button class="counter-btn" id="minus1" aria-label="Sænk Hold 2 input">−</button>
+              <div class="counter-val" id="input1">0</div>
+              <button class="counter-btn" id="plus1" aria-label="Hæv Hold 2 input">+</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-add" id="addRoundBtn">Registrér runde</button>
+        <div class="mode-note" id="modeInfo">Vinder ved præcis 21 — bust sender dig tilbage til 15</div>
+      </div>
+    </section>
+
+    <section class="history-wrap" aria-labelledby="historyHeading">
+      <div class="history-header-bar">
+        <span class="history-title" id="historyHeading">Rundehistorik</span>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="empty-note">Ingen runder endnu.</div>
+      </div>
+    </section>
+
+    <div id="installHint" role="note">
+      <strong>Installer som app på iPhone</strong><br>
+      Tryk på Del → Føj til hjemmeskærm for at bruge uden browserbjælke
+      <br><span class="close-hint" id="dismissHintBtn">Luk</span>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <img src="https://auth.useful.dk/media/public/logo_2.svg" alt="Useful Inc">
+    © 2026 Useful Inc
+  </footer>
+
+  <div class="modal-overlay" id="winModal" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <div class="modal-box">
+      <div class="modal-icon">🏆</div>
+      <div class="modal-title" id="winTitle">Hold 1 vinder!</div>
+      <div class="modal-sub" id="winSub">Tillykke!</div>
+      <div class="stats-grid" id="statsGrid"></div>
+      <button class="btn btn-primary" id="newGameBtn" style="width:100%">Ny kamp</button>
+    </div>
   </div>
-</header>
 
-<main class="main">
-
-  <!-- Score cards -->
-  <div class="score-grid">
-    <div class="score-card" id="board0">
-      <input class="team-name-input" id="name0" value="Hold 1" maxlength="10" onclick="this.select()">
-      <div class="score-num" id="score0">0</div>
-      <div class="score-sub">point</div>
-      <div class="bust-label" id="bust0"></div>
-    </div>
-    <div class="score-card" id="board1">
-      <input class="team-name-input" id="name1" value="Hold 2" maxlength="10" onclick="this.select()">
-      <div class="score-num" id="score1">0</div>
-      <div class="score-sub">point</div>
-      <div class="bust-label" id="bust1"></div>
+  <div class="sheet-overlay" id="abortSheet" role="dialog" aria-modal="true" aria-labelledby="abortTitle">
+    <div class="sheet-box">
+      <div class="sheet-title" id="abortTitle">Afbryd spillet?</div>
+      <div class="sheet-sub">Alle point og runder nulstilles.<br>Dette kan ikke fortrydes.</div>
+      <div class="sheet-btns">
+        <button class="btn" id="abortCancelBtn">Fortsæt</button>
+        <button class="btn btn-error" id="abortConfirmBtn">Afbryd</button>
+      </div>
     </div>
   </div>
 
-  <!-- Round input -->
-  <div class="panel">
-    <div class="panel-header">
-      <span class="panel-title">Runde</span>
-      <span class="panel-round" id="roundNum">1</span>
-    </div>
-    <div class="panel-body">
-      <div class="input-row">
+  <div class="sheet-overlay" id="editSheet" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="sheet-box">
+      <div class="sheet-title" id="editTitle">Ret sidste runde</div>
+      <div class="sheet-sub" id="editSheetSub">Runde —</div>
+      <div class="edit-row">
         <div class="input-group">
-          <div class="input-group-label" id="inputLabel0">Hold 1</div>
+          <div class="input-group-label" id="editLabel0">Hold 1</div>
           <div class="counter">
-            <button class="counter-btn" onclick="change(0,-1)">−</button>
-            <div class="counter-val" id="input0">0</div>
-            <button class="counter-btn" onclick="change(0,1)">+</button>
+            <button class="counter-btn" id="editMinus0" aria-label="Sænk redigering Hold 1">−</button>
+            <div class="counter-val" id="editVal0">0</div>
+            <button class="counter-btn" id="editPlus0" aria-label="Hæv redigering Hold 1">+</button>
           </div>
         </div>
         <div class="vs">vs</div>
         <div class="input-group">
-          <div class="input-group-label" id="inputLabel1">Hold 2</div>
+          <div class="input-group-label" id="editLabel1">Hold 2</div>
           <div class="counter">
-            <button class="counter-btn" onclick="change(1,-1)">−</button>
-            <div class="counter-val" id="input1">0</div>
-            <button class="counter-btn" onclick="change(1,1)">+</button>
+            <button class="counter-btn" id="editMinus1" aria-label="Sænk redigering Hold 2">−</button>
+            <div class="counter-val" id="editVal1">0</div>
+            <button class="counter-btn" id="editPlus1" aria-label="Hæv redigering Hold 2">+</button>
           </div>
         </div>
       </div>
-      <button class="btn btn-primary btn-add" onclick="addRound()">Registrér runde</button>
-      <div class="mode-note" id="modeInfo">Vinder ved præcis 21 — bust sender dig tilbage til 15</div>
-    </div>
-  </div>
-
-  <!-- History -->
-  <div class="history-wrap">
-    <div class="history-header-bar">
-      <span class="history-title">Rundehistorik</span>
-    </div>
-    <div class="history-list" id="historyList">
-      <div class="empty-note">Ingen runder endnu.</div>
-    </div>
-  </div>
-
-  <div id="installHint">
-    <strong>Installer som app på iPhone</strong><br>
-    Tryk på Del → Føj til hjemmeskærm for at bruge uden browserbjælke
-    <br><span class="close-hint" onclick="dismissHint()">Luk</span>
-  </div>
-
-</main>
-
-<footer class="site-footer">
-  <img src="https://auth.useful.dk/media/public/logo_2.svg" alt="Useful Inc">
-  © 2026 Useful Inc
-</footer>
-
-<!-- Winner modal -->
-<div class="modal-overlay" id="winModal">
-  <div class="modal-box">
-    <div class="modal-icon">🏆</div>
-    <div class="modal-title" id="winTitle">Hold 1 vinder!</div>
-    <div class="modal-sub" id="winSub">Tillykke!</div>
-
-    <!-- Stats grid -->
-    <div class="stats-grid" id="statsGrid"></div>
-
-    <button class="btn btn-primary" onclick="newGame()" style="width:100%">Ny kamp</button>
-  </div>
-</div>
-
-<!-- Abort confirm sheet -->
-<div class="sheet-overlay" id="abortSheet">
-  <div class="sheet-box">
-    <div class="sheet-title">Afbryd spillet?</div>
-    <div class="sheet-sub">Alle point og runder nulstilles.<br>Dette kan ikke fortrydes.</div>
-    <div class="sheet-btns">
-      <button class="btn" onclick="hideAbort()">Fortsæt</button>
-      <button class="btn btn-error" onclick="abortGame()">Afbryd</button>
-    </div>
-  </div>
-</div>
-
-<!-- Edit last round sheet -->
-<div class="sheet-overlay" id="editSheet">
-  <div class="sheet-box">
-    <div class="sheet-title">Ret sidste runde</div>
-    <div class="sheet-sub" id="editSheetSub">Runde —</div>
-    <div class="edit-row">
-      <div class="input-group">
-        <div class="input-group-label" id="editLabel0">Hold 1</div>
-        <div class="counter">
-          <button class="counter-btn" onclick="editChange(0,-1)">−</button>
-          <div class="counter-val" id="editVal0">0</div>
-          <button class="counter-btn" onclick="editChange(0,1)">+</button>
+      <div class="sheet-btns">
+        <button class="btn" id="editCancelBtn">Annuller</button>
+        <button class="btn btn-primary" id="saveEditBtn">Gem rettelse</button>
+      </div>
+      <div id="deleteConfirm" class="delete-confirm is-hidden">
+        <div class="delete-confirm-text">Er du sikker? Scoren rulles tilbage.</div>
+        <div class="delete-confirm-actions">
+          <button class="btn" id="deleteCancelBtn">Annuller</button>
+          <button class="btn btn-error" id="deleteConfirmBtn">Ja, slet</button>
         </div>
       </div>
-      <div class="vs">vs</div>
-      <div class="input-group">
-        <div class="input-group-label" id="editLabel1">Hold 2</div>
-        <div class="counter">
-          <button class="counter-btn" onclick="editChange(1,-1)">−</button>
-          <div class="counter-val" id="editVal1">0</div>
-          <button class="counter-btn" onclick="editChange(1,1)">+</button>
-        </div>
-      </div>
-    </div>
-    <div class="sheet-btns">
-      <button class="btn" onclick="hideEdit()">Annuller</button>
-      <button class="btn btn-primary" onclick="saveEdit()">Gem rettelse</button>
-    </div>
-    <div id="deleteConfirm" style="display:none; background:rgba(232,86,0,.08); border:1px solid rgba(232,86,0,.25); border-radius:.75rem; padding:.75rem; text-align:center;">
-      <div style="font-size:.8rem; font-weight:600; color:var(--error); margin-bottom:.5rem;">Er du sikker? Scoren rulles tilbage.</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
-        <button class="btn" onclick="document.getElementById('deleteConfirm').style.display='none'">Annuller</button>
-        <button class="btn btn-error" onclick="confirmDelete()">Ja, slet</button>
-      </div>
-    </div>
-    <button class="btn btn-error" id="deleteBtn" style="width:100%" onclick="document.getElementById('deleteConfirm').style.display='block';this.style.display='none'">Slet denne runde</button>
-  </div>
-</div>
-
-<!-- Delete confirm sheet -->
-<div class="sheet-overlay" id="deleteSheet">
-  <div class="sheet-box">
-    <div class="sheet-title" id="deleteSheetTitle">Slet runde?</div>
-    <div class="sheet-sub">Pointene fjernes og scoren rulles tilbage.</div>
-    <div class="sheet-btns">
-      <button class="btn" onclick="hideDelete()">Annuller</button>
-      <button class="btn btn-error" onclick="confirmDelete()">Slet runde</button>
+      <button class="btn btn-error" id="deleteBtn" style="width:100%">Slet denne runde</button>
     </div>
   </div>
-</div>
 
-<script>
-// ── PWA: SW via Blob ─────────────────────────────────────────────────────────
-(function(){
-  if(!('serviceWorker' in navigator)) return;
-  const sw=`const C='cornhole-v3';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll([self.registration.scope])));self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>{if(r)return r;return fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>r);}));});`;
-  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'})),{scope:'./'}).catch(()=>{});
-})();
-
-// ── PWA: Canvas icon ─────────────────────────────────────────────────────────
-(function(){
-  const c=document.createElement('canvas'); c.width=c.height=192;
-  const x=c.getContext('2d');
-  x.fillStyle='#5755d9'; x.beginPath(); x.roundRect(0,0,192,192,36); x.fill();
-  x.fillStyle='rgba(255,255,255,.18)'; x.beginPath(); x.roundRect(16,16,160,160,24); x.fill();
-  x.fillStyle='#fff'; x.beginPath(); x.arc(96,96,30,0,Math.PI*2); x.fill();
-  x.fillStyle='#5755d9'; x.beginPath(); x.arc(96,96,18,0,Math.PI*2); x.fill();
-  x.strokeStyle='rgba(255,255,255,.8)'; x.lineWidth=4; x.beginPath(); x.arc(96,96,48,0,Math.PI*2); x.stroke();
-  const icon=c.toDataURL('image/png');
-  ['apple-touch-icon','icon'].forEach(r=>{const l=document.createElement('link');l.rel=r;l.href=icon;document.head.appendChild(l);});
-})();
-
-// ── Offline ──────────────────────────────────────────────────────────────────
-const offBanner=document.getElementById('offlineBanner');
-function updOnline(){offBanner.style.display=navigator.onLine?'none':'block';}
-window.addEventListener('online',updOnline); window.addEventListener('offline',updOnline); updOnline();
-
-// ── Install hint ─────────────────────────────────────────────────────────────
-if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone&&!localStorage.getItem('ch-hint')){
-  setTimeout(()=>document.getElementById('installHint').style.display='block',2500);
-}
-function dismissHint(){document.getElementById('installHint').style.display='none';localStorage.setItem('ch-hint','1');}
-
-// ── State ────────────────────────────────────────────────────────────────────
-let scores=[0,0], inp=[0,0], round=1, exactMode=true, history=[], gameOver=false;
-
-// Each history entry: { round, raw0, raw1, n0, n1, preScores }
-// preScores = scores BEFORE this round was applied (for undo)
-
-function save(){
-  try{ localStorage.setItem('ch-state', JSON.stringify({
-    scores, round, exactMode, history, gameOver,
-    names:[document.getElementById('name0').value, document.getElementById('name1').value]
-  }));}catch(e){}
-}
-
-function load(){
-  try{
-    const raw=localStorage.getItem('ch-state'); if(!raw) return;
-    const s=JSON.parse(raw);
-    scores=s.scores||[0,0]; round=s.round||1; exactMode=s.exactMode!==undefined?s.exactMode:true;
-    history=s.history||[]; gameOver=s.gameOver||false;
-    if(s.names){document.getElementById('name0').value=s.names[0]||'Hold 1';document.getElementById('name1').value=s.names[1]||'Hold 2';}
-    document.getElementById('modePill').textContent=exactMode?'Præcis 21':'Mindst 21';
-    document.getElementById('modeInfo').textContent=exactMode?'Vinder ved præcis 21 — bust sender dig tilbage til 15':'Vinder ved 21 eller derover';
-    syncLabels(); renderBoards(); renderHistory(); updateAbortBtn();
-    if(gameOver) checkWin();
-  }catch(e){}
-}
-
-function syncLabels(){
-  document.getElementById('inputLabel0').textContent=document.getElementById('name0').value||'Hold 1';
-  document.getElementById('inputLabel1').textContent=document.getElementById('name1').value||'Hold 2';
-  document.getElementById('editLabel0').textContent=document.getElementById('name0').value||'Hold 1';
-  document.getElementById('editLabel1').textContent=document.getElementById('name1').value||'Hold 2';
-}
-document.getElementById('name0').addEventListener('input',()=>{syncLabels();save();});
-document.getElementById('name1').addEventListener('input',()=>{syncLabels();save();});
-
-// ── Logic ────────────────────────────────────────────────────────────────────
-function toggleMode(){
-  exactMode=!exactMode;
-  document.getElementById('modePill').textContent=exactMode?'Præcis 21':'Mindst 21';
-  document.getElementById('modeInfo').textContent=exactMode?'Vinder ved præcis 21 — bust sender dig tilbage til 15':'Vinder ved 21 eller derover';
-  renderBoards(); save();
-}
-
-function change(t,d){if(gameOver)return; inp[t]=Math.max(0,inp[t]+d); document.getElementById('input'+t).textContent=inp[t];}
-
-function applyRound(raw0, raw1, preScores){
-  const n0=Math.max(0,raw0-raw1), n1=Math.max(0,raw1-raw0);
-  let s0=preScores[0]+n0, s1=preScores[1]+n1;
-  let bust0=false, bust1=false;
-  if(exactMode){ if(s0>21){s0=15;bust0=true;} if(s1>21){s1=15;bust1=true;} }
-  return {n0,n1,s0,s1,bust0,bust1};
-}
-
-function addRound(){
-  if(gameOver) return;
-  // Haptic feedback
-  if(navigator.vibrate) navigator.vibrate(10);
-  const raw0=inp[0], raw1=inp[1];
-  const pre=[...scores];
-  const {n0,n1,s0,s1,bust0,bust1}=applyRound(raw0,raw1,pre);
-  // store previous bust state so we can restore it on delete
-  const prevBust0=document.getElementById('bust0').textContent;
-  const prevBust1=document.getElementById('bust1').textContent;
-  history.push({round, raw0, raw1, n0, n1, preScores:pre, prevBust0, prevBust1, bust0, bust1});
-  scores=[s0,s1]; round++;
-  inp=[0,0];
-  document.getElementById('input0').textContent='0';
-  document.getElementById('input1').textContent='0';
-  document.getElementById('bust0').textContent=bust0?'BUST → 15':'';
-  document.getElementById('bust1').textContent=bust1?'BUST → 15':'';
-  renderBoards(); renderHistory(); updateAbortBtn(); save(); checkWin();
-}
-
-function renderBoards(){
-  const leading = scores[0]===scores[1] ? -1 : (scores[0]>scores[1] ? 0 : 1);
-  for(let i=0;i<2;i++){
-    const el=document.getElementById('score'+i);
-    const b=document.getElementById('board'+i);
-    el.textContent=scores[i];
-    b.classList.remove('winning','busted','leading');
-    if(exactMode&&scores[i]===21) b.classList.add('winning');
-    else if(!exactMode&&scores[i]>=21) b.classList.add('winning');
-    else if(leading===i && scores[i]>0) b.classList.add('leading');
-    el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),200);
-  }
-  document.getElementById('roundNum').textContent=round;
-}
-
-function renderHistory(){
-  const l=document.getElementById('historyList'); l.innerHTML='';
-  if(!history.length){l.innerHTML='<div class="empty-note">Ingen runder endnu.</div>'; return;}
-  [...history].reverse().forEach((h,idx)=>{
-    const isLast=(idx===0); // reversed, so idx 0 = newest
-    const d=document.createElement('div');
-    d.className='h-item'+(isLast?' latest':'');
-    d.innerHTML=`
-      <span class="h-rnd">R${h.round}</span>
-      <span class="h-pts ${h.n0>0?'pos':'zero'}">+${h.n0}</span>
-      <span class="h-sep">—</span>
-      <span class="h-pts ${h.n1>0?'pos':'zero'}">+${h.n1}</span>
-      <span class="h-actions">${isLast
-        ? `<button class="h-btn edt" onclick="showEdit()" title="Ret runde">✎</button>`
-        : ''}</span>`;
-    l.appendChild(d);
-  });
-}
-
-function checkWin(){
-  let w=-1;
-  if(exactMode){ if(scores[0]===21) w=0; else if(scores[1]===21) w=1; }
-  else{
-    if(scores[0]>=21&&scores[1]>=21) w=scores[0]>=scores[1]?0:1;
-    else if(scores[0]>=21) w=0;
-    else if(scores[1]>=21) w=1;
-  }
-  if(w>=0){
-    gameOver=true;
-    const name0=document.getElementById('name0').value||'Hold 1';
-    const name1=document.getElementById('name1').value||'Hold 2';
-    const wName=w===0?name0:name1;
-    document.getElementById('winTitle').textContent=wName+' vinder!';
-    document.getElementById('winSub').textContent=scores[w]+' point efter '+(round-1)+' runder';
-
-    // ── Compute stats ──
-    const totalRounds=history.length;
-    const tot0=history.reduce((s,h)=>s+h.n0,0);
-    const tot1=history.reduce((s,h)=>s+h.n1,0);
-    const best0=history.reduce((m,h)=>Math.max(m,h.n0),0);
-    const best1=history.reduce((m,h)=>Math.max(m,h.n1),0);
-    const busts0=history.filter(h=>h.bust0).length;
-    const busts1=history.filter(h=>h.bust1).length;
-    const zeros0=history.filter(h=>h.n0===0).length;
-    const zeros1=history.filter(h=>h.n1===0).length;
-    const bestRound=history.reduce((b,h)=>{const t=h.n0+h.n1; return t>b.t?{t,r:h.round}:b;},{t:-1,r:0});
-
-    function statRow(label, v0, v1, highlightWinner=false){
-      const h0=highlightWinner&&w===0, h1=highlightWinner&&w===1;
-      return `
-        <div class="stat-item">
-          <div class="stat-label">${name0}<br>${label}</div>
-          <div class="stat-val ${h0?'highlight':''}">${v0}</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">${name1}<br>${label}</div>
-          <div class="stat-val ${h1?'highlight':''}">${v1}</div>
-        </div>`;
-    }
-
-    document.getElementById('statsGrid').innerHTML =
-      statRow('Samlede point', tot0, tot1, true) +
-      statRow('Bedste runde', best0, best1) +
-      statRow('Scoringsrunder', totalRounds-zeros0, totalRounds-zeros1) +
-      (exactMode ? statRow('Busts', busts0, busts1) : '') +
-      `<div class="stat-item stat-wide">
-         <div class="stat-label">Mest aktive runde</div>
-         <div class="stat-val">R${bestRound.r} (${bestRound.t} net-point)</div>
-       </div>`;
-
-    document.getElementById('winModal').classList.add('active');
-    updateAbortBtn(); save();
-  }
-}
-
-function newGame(){
-  scores=[0,0]; inp=[0,0]; round=1; history=[]; gameOver=false;
-  ['score0','score1','input0','input1'].forEach(id=>document.getElementById(id).textContent='0');
-  ['board0','board1'].forEach(id=>document.getElementById(id).classList.remove('winning','busted'));
-  ['bust0','bust1'].forEach(id=>document.getElementById(id).textContent='');
-  document.getElementById('roundNum').textContent='1';
-  document.getElementById('winModal').classList.remove('active');
-  renderHistory(); updateAbortBtn(); localStorage.removeItem('ch-state');
-}
-
-function updateAbortBtn(){
-  const show=(round>1||scores[0]>0||scores[1]>0)&&!gameOver;
-  document.getElementById('abortBtn').classList.toggle('visible', show);
-}
-
-// ── Abort ────────────────────────────────────────────────────────────────────
-function showAbort(){ document.getElementById('abortSheet').classList.add('active'); }
-function hideAbort(){ document.getElementById('abortSheet').classList.remove('active'); }
-function abortGame(){ hideAbort(); newGame(); }
-
-// ── Edit last round ──────────────────────────────────────────────────────────
-let editInp=[0,0];
-
-function showEdit(){
-  if(!history.length) return;
-  const h=history[history.length-1];
-  editInp=[h.raw0, h.raw1];
-  document.getElementById('editVal0').textContent=editInp[0];
-  document.getElementById('editVal1').textContent=editInp[1];
-  document.getElementById('editSheetSub').textContent='Runde '+h.round+' — ændr de kastede point';
-  syncLabels();
-  document.getElementById('editSheet').classList.add('active');
-}
-function hideEdit(){
-  document.getElementById('editSheet').classList.remove('active');
-  document.getElementById('deleteConfirm').style.display='none';
-  document.getElementById('deleteBtn').style.display='';
-}
-
-function editChange(t,d){
-  editInp[t]=Math.max(0,editInp[t]+d);
-  document.getElementById('editVal'+t).textContent=editInp[t];
-}
-
-function saveEdit(){
-  if(!history.length) return;
-  const h=history[history.length-1];
-  const {n0,n1,s0,s1,bust0,bust1}=applyRound(editInp[0],editInp[1],h.preScores);
-  h.raw0=editInp[0]; h.raw1=editInp[1]; h.n0=n0; h.n1=n1; h.bust0=bust0; h.bust1=bust1;
-  scores=[s0,s1];
-  document.getElementById('bust0').textContent=bust0?'BUST → 15':'';
-  document.getElementById('bust1').textContent=bust1?'BUST → 15':'';
-  hideEdit();
-  renderBoards(); renderHistory(); save();
-}
-
-// ── Delete last round ─────────────────────────────────────────────────────────
-function confirmDelete(){
-  if(!history.length) return;
-  const h=history.pop();
-  scores=[...h.preScores];
-  round=h.round;
-  // restore bust state from the round before the deleted one
-  const prev=history[history.length-1];
-  document.getElementById('bust0').textContent=prev ? (prev.bust0?'BUST → 15':'') : '';
-  document.getElementById('bust1').textContent=prev ? (prev.bust1?'BUST → 15':'') : '';
-  hideEdit();
-  renderBoards(); renderHistory(); updateAbortBtn(); save();
-}
-
-// ── Boot ─────────────────────────────────────────────────────────────────────
-load();
-</script>
+  <script src="./cornhole.js" defer></script>
 </body>
 </html>
