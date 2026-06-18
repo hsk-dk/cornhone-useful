@@ -9,7 +9,8 @@ This project is a lightweight HTML-based scoreboard for casual cornhole matches.
 ## Features
 
 - Track team scores during play
-- Simple, minimal UI
+- Round history with edit/delete for the latest round
+- Toggle between exact-21 and at-least-21 win modes
 - Static web app (no backend required)
 
 ## Getting Started
@@ -31,7 +32,9 @@ This project is a lightweight HTML-based scoreboard for casual cornhole matches.
 
 ## Tech Stack
 
-- HTML (100%)
+- HTML
+- CSS
+- Vanilla JavaScript
 
 ## License
 
