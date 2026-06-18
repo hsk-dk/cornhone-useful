@@ -223,6 +223,7 @@ function getWinner(scores, exactMode) {
   }
 
   if (scores[0] >= WIN_SCORE && scores[1] >= WIN_SCORE) {
+    // Preserve the existing app behavior: equal 21+ scores resolve in favor of team 0.
     return scores[0] >= scores[1] ? 0 : 1;
   }
   if (scores[0] >= WIN_SCORE) return 0;
