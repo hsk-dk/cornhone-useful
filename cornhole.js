@@ -1,636 +1,3 @@
-const STORAGE_KEY = 'ch-state';
-const INSTALL_HINT_KEY = 'ch-hint';
-const WIN_SCORE = 21;
-const BUST_SCORE = 15;
-const VIBRATE_MS = 10;
-const SCORE_BUMP_MS = 200;
-const TEAM_DEFAULTS = ['Hold 1', 'Hold 2'];
-const EMPTY_HISTORY_TEXT = 'Ingen runder endnu.';
-const BUST_MESSAGE = `BUST → ${BUST_SCORE}`;
-const EDIT_ROUND_TEXT = 'Ret runde';
-
-const MODE_COPY = {
-  true: {
-    pill: 'Præcis 21',
-    note: 'Vinder ved præcis 21 — bust sender dig tilbage til 15'
-  },
-  false: {
-    pill: 'Mindst 21',
-    note: 'Vinder ved 21 eller derover'
-  }
-};
-
-const els = {
-  offlineBanner: document.getElementById('offlineBanner'),
-  installHint: document.getElementById('installHint'),
-  dismissHintBtn: document.getElementById('dismissHintBtn'),
-  nameInputs: [document.getElementById('name0'), document.getElementById('name1')],
-  inputLabels: [document.getElementById('inputLabel0'), document.getElementById('inputLabel1')],
-  editLabels: [document.getElementById('editLabel0'), document.getElementById('editLabel1')],
-  modeBtn: document.getElementById('modeBtn'),
-  modePill: document.getElementById('modePill'),
-  modeInfo: document.getElementById('modeInfo'),
-  boards: [document.getElementById('board0'), document.getElementById('board1')],
-  scores: [document.getElementById('score0'), document.getElementById('score1')],
-  busts: [document.getElementById('bust0'), document.getElementById('bust1')],
-  inputs: [document.getElementById('input0'), document.getElementById('input1')],
-  inputMinus: [document.getElementById('minus0'), document.getElementById('minus1')],
-  inputPlus: [document.getElementById('plus0'), document.getElementById('plus1')],
-  roundNum: document.getElementById('roundNum'),
-  historyList: document.getElementById('historyList'),
-  abortBtn: document.getElementById('abortBtn'),
-  addRoundBtn: document.getElementById('addRoundBtn'),
-  winModal: document.getElementById('winModal'),
-  winTitle: document.getElementById('winTitle'),
-  winSub: document.getElementById('winSub'),
-  statsGrid: document.getElementById('statsGrid'),
-  newGameBtn: document.getElementById('newGameBtn'),
-  abortSheet: document.getElementById('abortSheet'),
-  abortCancelBtn: document.getElementById('abortCancelBtn'),
-  abortConfirmBtn: document.getElementById('abortConfirmBtn'),
-  editSheet: document.getElementById('editSheet'),
-  editSheetSub: document.getElementById('editSheetSub'),
-  editVals: [document.getElementById('editVal0'), document.getElementById('editVal1')],
-  editMinus: [document.getElementById('editMinus0'), document.getElementById('editMinus1')],
-  editPlus: [document.getElementById('editPlus0'), document.getElementById('editPlus1')],
-  editCancelBtn: document.getElementById('editCancelBtn'),
-  saveEditBtn: document.getElementById('saveEditBtn'),
-  deleteConfirm: document.getElementById('deleteConfirm'),
-  deleteBtn: document.getElementById('deleteBtn'),
-  deleteCancelBtn: document.getElementById('deleteCancelBtn'),
-  deleteConfirmBtn: document.getElementById('deleteConfirmBtn')
-};
-
-const state = {
-  scores: [0, 0],
-  input: [0, 0],
-  round: 1,
-  exactMode: true,
-  history: [],
-  gameOver: false
-};
-
-const editState = {
-  input: [0, 0]
-};
-
-// Each history entry:
-// { round, raw0, raw1, n0, n1, preScores, bust0, bust1 }
-// round = round number, raw* = thrown points, n* = net points, preScores = scores before the round.
-
-function getModeCopy(exactMode) {
-  return MODE_COPY[String(exactMode)];
-}
-
-function getDefaultTeamName(index) {
-  return TEAM_DEFAULTS[index];
-}
-
-function getTeamName(index) {
-  return els.nameInputs[index].value || getDefaultTeamName(index);
-}
-
-function getTeamNames() {
-  return [getTeamName(0), getTeamName(1)];
-}
-
-function setText(el, text) {
-  el.textContent = text;
-}
-
-function setCounterTexts(elements, values) {
-  elements.forEach((el, index) => setText(el, String(values[index])));
-}
-
-function setBustLabels(busts) {
-  els.busts.forEach((el, index) => {
-    setText(el, busts[index] ? BUST_MESSAGE : '');
-  });
-}
-
-function renderMode() {
-  const modeCopy = getModeCopy(state.exactMode);
-  setText(els.modePill, modeCopy.pill);
-  setText(els.modeInfo, modeCopy.note);
-}
-
-function renderLabels() {
-  const names = getTeamNames();
-  [els.inputLabels, els.editLabels].forEach(labelGroup => {
-    labelGroup.forEach((el, index) => {
-      setText(el, names[index]);
-    });
-  });
-}
-
-function updateOnlineBanner() {
-  els.offlineBanner.style.display = navigator.onLine ? 'none' : 'block';
-}
-
-function shouldShowInstallHint() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent)
-    && !window.navigator.standalone
-    && !localStorage.getItem(INSTALL_HINT_KEY);
-}
-
-function showInstallHint() {
-  els.installHint.style.display = 'block';
-}
-
-function hideInstallHint() {
-  els.installHint.style.display = 'none';
-}
-
-function dismissInstallHint() {
-  hideInstallHint();
-  localStorage.setItem(INSTALL_HINT_KEY, '1');
-}
-
-function getSavedState() {
-  return {
-    scores: state.scores,
-    round: state.round,
-    exactMode: state.exactMode,
-    history: state.history,
-    gameOver: state.gameOver,
-    names: els.nameInputs.map(input => input.value)
-  };
-}
-
-function save() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(getSavedState()));
-  } catch (e) {}
-}
-
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-
-    const saved = JSON.parse(raw);
-    state.scores = saved.scores || [0, 0];
-    state.round = saved.round || 1;
-    state.exactMode = saved.exactMode !== undefined ? saved.exactMode : true;
-    state.history = saved.history || [];
-    state.gameOver = saved.gameOver || false;
-
-    if (saved.names) {
-      els.nameInputs.forEach((input, index) => {
-        input.value = saved.names[index] || getDefaultTeamName(index);
-      });
-    }
-
-    renderMode();
-    renderLabels();
-    renderInputs();
-    renderBoards();
-    renderHistory();
-    updateAbortBtn();
-    setBustLabels(getCurrentBusts());
-
-    if (state.gameOver) {
-      renderWinState();
-    }
-  } catch (e) {}
-}
-
-function applyRound(raw0, raw1, preScores, exactMode) {
-  const n0 = Math.max(0, raw0 - raw1);
-  const n1 = Math.max(0, raw1 - raw0);
-  let s0 = preScores[0] + n0;
-  let s1 = preScores[1] + n1;
-  let bust0 = false;
-  let bust1 = false;
-
-  if (exactMode) {
-    if (s0 > WIN_SCORE) {
-      s0 = BUST_SCORE;
-      bust0 = true;
-    }
-    if (s1 > WIN_SCORE) {
-      s1 = BUST_SCORE;
-      bust1 = true;
-    }
-  }
-
-  return { n0, n1, s0, s1, bust0, bust1 };
-}
-
-function getWinner(scores, exactMode) {
-  if (exactMode) {
-    if (scores[0] === WIN_SCORE) return 0;
-    if (scores[1] === WIN_SCORE) return 1;
-    return -1;
-  }
-
-  if (scores[0] >= WIN_SCORE && scores[1] >= WIN_SCORE) {
-    // Preserve the existing app behavior: equal 21+ scores resolve in favor of team 0.
-    return scores[0] >= scores[1] ? 0 : 1;
-  }
-  if (scores[0] >= WIN_SCORE) return 0;
-  if (scores[1] >= WIN_SCORE) return 1;
-  return -1;
-}
-
-function isWinningScore(score, exactMode) {
-  return exactMode ? score === WIN_SCORE : score >= WIN_SCORE;
-}
-
-function computeGameStats(history) {
-  const totalRounds = history.length;
-  const totals = [0, 0];
-  const bestRounds = [0, 0];
-  const busts = [0, 0];
-  const zeroRounds = [0, 0];
-  let bestRound = { total: -1, round: 0 };
-
-  history.forEach(roundEntry => {
-    totals[0] += roundEntry.n0;
-    totals[1] += roundEntry.n1;
-    bestRounds[0] = Math.max(bestRounds[0], roundEntry.n0);
-    bestRounds[1] = Math.max(bestRounds[1], roundEntry.n1);
-    busts[0] += roundEntry.bust0 ? 1 : 0;
-    busts[1] += roundEntry.bust1 ? 1 : 0;
-    zeroRounds[0] += roundEntry.n0 === 0 ? 1 : 0;
-    zeroRounds[1] += roundEntry.n1 === 0 ? 1 : 0;
-
-    const roundTotal = roundEntry.n0 + roundEntry.n1;
-    if (roundTotal > bestRound.total) {
-      bestRound = { total: roundTotal, round: roundEntry.round };
-    }
-  });
-
-  return {
-    totalRounds,
-    totals,
-    bestRounds,
-    busts,
-    scoringRounds: [totalRounds - zeroRounds[0], totalRounds - zeroRounds[1]],
-    bestRound
-  };
-}
-
-function createStatRow(names, winner, label, values, highlightWinner) {
-  return values.map((value, index) => {
-    const statItem = document.createElement('div');
-    statItem.className = 'stat-item';
-
-    const statLabel = document.createElement('div');
-    statLabel.className = 'stat-label';
-    statLabel.append(document.createTextNode(names[index]), document.createElement('br'), document.createTextNode(label));
-
-    const statValue = document.createElement('div');
-    statValue.className = `stat-val${highlightWinner && winner === index ? ' highlight' : ''}`;
-    setText(statValue, String(value));
-
-    statItem.appendChild(statLabel);
-    statItem.appendChild(statValue);
-    return statItem;
-  });
-}
-
-function renderStatsGrid(names, winner, stats) {
-  const fragment = document.createDocumentFragment();
-
-  createStatRow(names, winner, 'Samlede point', stats.totals, true).forEach(item => fragment.appendChild(item));
-  createStatRow(names, winner, 'Bedste runde', stats.bestRounds, false).forEach(item => fragment.appendChild(item));
-  createStatRow(names, winner, 'Scoringsrunder', stats.scoringRounds, false).forEach(item => fragment.appendChild(item));
-
-  if (state.exactMode) {
-    createStatRow(names, winner, 'Busts', stats.busts, false).forEach(item => fragment.appendChild(item));
-  }
-
-  const bestRoundItem = document.createElement('div');
-  bestRoundItem.className = 'stat-item stat-wide';
-
-  const bestRoundLabel = document.createElement('div');
-  bestRoundLabel.className = 'stat-label';
-  setText(bestRoundLabel, 'Mest aktive runde');
-
-  const bestRoundValue = document.createElement('div');
-  bestRoundValue.className = 'stat-val';
-  setText(bestRoundValue, `R${stats.bestRound.round} (${stats.bestRound.total} net-point)`);
-
-  bestRoundItem.appendChild(bestRoundLabel);
-  bestRoundItem.appendChild(bestRoundValue);
-  fragment.appendChild(bestRoundItem);
-
-  els.statsGrid.replaceChildren(fragment);
-}
-
-function getLeadingTeam(scores) {
-  if (scores[0] === scores[1]) return -1;
-  return scores[0] > scores[1] ? 0 : 1;
-}
-
-function getCurrentBusts() {
-  const lastRound = state.history[state.history.length - 1];
-  return lastRound ? [lastRound.bust0, lastRound.bust1] : [false, false];
-}
-
-function renderInputs() {
-  setCounterTexts(els.inputs, state.input);
-}
-
-function renderBoards() {
-  const leading = getLeadingTeam(state.scores);
-
-  els.scores.forEach((scoreEl, index) => {
-    setText(scoreEl, String(state.scores[index]));
-
-    const boardEl = els.boards[index];
-    boardEl.classList.remove('winning', 'busted', 'leading');
-
-    if (isWinningScore(state.scores[index], state.exactMode)) {
-      boardEl.classList.add('winning');
-    } else if (leading === index && state.scores[index] > 0) {
-      boardEl.classList.add('leading');
-    }
-
-    scoreEl.classList.add('bump');
-    setTimeout(() => scoreEl.classList.remove('bump'), SCORE_BUMP_MS);
-  });
-
-  setText(els.roundNum, String(state.round));
-}
-
-function createHistoryEditButton() {
-  const button = document.createElement('button');
-  button.className = 'h-btn edt';
-  button.title = EDIT_ROUND_TEXT;
-  button.setAttribute('aria-label', EDIT_ROUND_TEXT);
-  setText(button, '✎');
-  button.addEventListener('click', showEdit);
-  return button;
-}
-
-function createHistoryItem(roundEntry, isLast) {
-  const item = document.createElement('div');
-  item.className = `h-item${isLast ? ' latest' : ''}`;
-
-  const round = document.createElement('span');
-  round.className = 'h-rnd';
-  setText(round, `R${roundEntry.round}`);
-
-  const points0 = document.createElement('span');
-  points0.className = `h-pts ${roundEntry.n0 > 0 ? 'pos' : 'zero'}`;
-  setText(points0, `+${roundEntry.n0}`);
-
-  const sep = document.createElement('span');
-  sep.className = 'h-sep';
-  setText(sep, '—');
-
-  const points1 = document.createElement('span');
-  points1.className = `h-pts ${roundEntry.n1 > 0 ? 'pos' : 'zero'}`;
-  setText(points1, `+${roundEntry.n1}`);
-
-  const actions = document.createElement('span');
-  actions.className = 'h-actions';
-  if (isLast) {
-    actions.appendChild(createHistoryEditButton());
-  }
-
-  item.append(round, points0, sep, points1, actions);
-  return item;
-}
-
-function renderHistory() {
-  if (!state.history.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-note';
-    setText(empty, EMPTY_HISTORY_TEXT);
-    els.historyList.replaceChildren(empty);
-    return;
-  }
-
-  const fragment = document.createDocumentFragment();
-  [...state.history].reverse().forEach((roundEntry, index) => {
-    fragment.appendChild(createHistoryItem(roundEntry, index === 0));
-  });
-  els.historyList.replaceChildren(fragment);
-}
-
-function updateAbortBtn() {
-  const show = (state.round > 1 || state.scores[0] > 0 || state.scores[1] > 0) && !state.gameOver;
-  els.abortBtn.classList.toggle('visible', show);
-}
-
-function renderWinState() {
-  const winner = getWinner(state.scores, state.exactMode);
-  if (winner < 0) return;
-
-  state.gameOver = true;
-
-  const names = getTeamNames();
-  const winnerName = names[winner];
-  setText(els.winTitle, `${winnerName} vinder!`);
-  setText(els.winSub, `${state.scores[winner]} point efter ${state.round - 1} runder`);
-
-  renderStatsGrid(names, winner, computeGameStats(state.history));
-  els.winModal.classList.add('active');
-  updateAbortBtn();
-  save();
-}
-
-function toggleMode() {
-  state.exactMode = !state.exactMode;
-  renderMode();
-  renderBoards();
-  save();
-}
-
-function change(teamIndex, delta) {
-  if (state.gameOver) return;
-  state.input[teamIndex] = Math.max(0, state.input[teamIndex] + delta);
-  renderInputs();
-}
-
-function addRound() {
-  if (state.gameOver) return;
-  if (navigator.vibrate) navigator.vibrate(VIBRATE_MS);
-
-  const raw0 = state.input[0];
-  const raw1 = state.input[1];
-  const preScores = [...state.scores];
-  const roundResult = applyRound(raw0, raw1, preScores, state.exactMode);
-
-  state.history.push({
-    round: state.round,
-    raw0,
-    raw1,
-    n0: roundResult.n0,
-    n1: roundResult.n1,
-    preScores,
-    bust0: roundResult.bust0,
-    bust1: roundResult.bust1
-  });
-
-  state.scores = [roundResult.s0, roundResult.s1];
-  state.round += 1;
-  state.input = [0, 0];
-
-  renderInputs();
-  setBustLabels([roundResult.bust0, roundResult.bust1]);
-  renderBoards();
-  renderHistory();
-  updateAbortBtn();
-  save();
-  renderWinState();
-}
-
-function newGame() {
-  state.scores = [0, 0];
-  state.input = [0, 0];
-  state.round = 1;
-  state.history = [];
-  state.gameOver = false;
-
-  renderInputs();
-  renderBoards();
-  renderHistory();
-  setBustLabels([false, false]);
-  els.winModal.classList.remove('active');
-  updateAbortBtn();
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-// ── Abort sheet ───────────────────────────────────────────────────────────────
-function showAbort() {
-  els.abortSheet.classList.add('active');
-}
-
-function hideAbort() {
-  els.abortSheet.classList.remove('active');
-}
-
-function abortGame() {
-  hideAbort();
-  newGame();
-}
-
-// ── Edit last round ───────────────────────────────────────────────────────────
-function renderEditInputs() {
-  setCounterTexts(els.editVals, editState.input);
-}
-
-function showEdit() {
-  if (!state.history.length) return;
-
-  const lastRound = state.history[state.history.length - 1];
-  editState.input = [lastRound.raw0, lastRound.raw1];
-
-  renderEditInputs();
-  setText(els.editSheetSub, `Runde ${lastRound.round} — ændr de kastede point`);
-  renderLabels();
-  els.editSheet.classList.add('active');
-}
-
-function hideEdit() {
-  els.editSheet.classList.remove('active');
-  els.deleteConfirm.classList.add('is-hidden');
-  els.deleteBtn.classList.remove('is-hidden');
-}
-
-function editChange(teamIndex, delta) {
-  editState.input[teamIndex] = Math.max(0, editState.input[teamIndex] + delta);
-  renderEditInputs();
-}
-
-function saveEdit() {
-  if (!state.history.length) return;
-
-  const lastRound = state.history[state.history.length - 1];
-  const roundResult = applyRound(editState.input[0], editState.input[1], lastRound.preScores, state.exactMode);
-
-  lastRound.raw0 = editState.input[0];
-  lastRound.raw1 = editState.input[1];
-  lastRound.n0 = roundResult.n0;
-  lastRound.n1 = roundResult.n1;
-  lastRound.bust0 = roundResult.bust0;
-  lastRound.bust1 = roundResult.bust1;
-  state.scores = [roundResult.s0, roundResult.s1];
-
-  setBustLabels([roundResult.bust0, roundResult.bust1]);
-  hideEdit();
-  renderBoards();
-  renderHistory();
-  save();
-}
-
-// ── Delete last round ─────────────────────────────────────────────────────────
-function confirmDelete() {
-  if (!state.history.length) return;
-
-  const lastRound = state.history.pop();
-  state.scores = [...lastRound.preScores];
-  state.round = lastRound.round;
-
-  hideEdit();
-  setBustLabels(getCurrentBusts());
-  renderBoards();
-  renderHistory();
-  updateAbortBtn();
-  save();
-}
-
-function showDeleteConfirm() {
-  els.deleteConfirm.classList.remove('is-hidden');
-  els.deleteBtn.classList.add('is-hidden');
-}
-
-function hideDeleteConfirm() {
-  els.deleteConfirm.classList.add('is-hidden');
-  els.deleteBtn.classList.remove('is-hidden');
-}
-
-function bindEvents() {
-  window.addEventListener('online', updateOnlineBanner);
-  window.addEventListener('offline', updateOnlineBanner);
-
-  els.dismissHintBtn.addEventListener('click', dismissInstallHint);
-  els.nameInputs.forEach(input => {
-    input.addEventListener('input', () => {
-      renderLabels();
-      save();
-    });
-  });
-
-  els.abortBtn.addEventListener('click', showAbort);
-  els.modeBtn.addEventListener('click', toggleMode);
-  els.inputMinus[0].addEventListener('click', () => change(0, -1));
-  els.inputPlus[0].addEventListener('click', () => change(0, 1));
-  els.inputMinus[1].addEventListener('click', () => change(1, -1));
-  els.inputPlus[1].addEventListener('click', () => change(1, 1));
-  els.addRoundBtn.addEventListener('click', addRound);
-  els.newGameBtn.addEventListener('click', newGame);
-  els.abortCancelBtn.addEventListener('click', hideAbort);
-  els.abortConfirmBtn.addEventListener('click', abortGame);
-  els.editMinus[0].addEventListener('click', () => editChange(0, -1));
-  els.editPlus[0].addEventListener('click', () => editChange(0, 1));
-  els.editMinus[1].addEventListener('click', () => editChange(1, -1));
-  els.editPlus[1].addEventListener('click', () => editChange(1, 1));
-  els.editCancelBtn.addEventListener('click', hideEdit);
-  els.saveEditBtn.addEventListener('click', saveEdit);
-  els.deleteBtn.addEventListener('click', showDeleteConfirm);
-  els.deleteCancelBtn.addEventListener('click', hideDeleteConfirm);
-  els.deleteConfirmBtn.addEventListener('click', confirmDelete);
-}
-
-function boot() {
-  updateOnlineBanner();
-  renderMode();
-  renderLabels();
-  renderInputs();
-  setBustLabels([false, false]);
-  bindEvents();
-  load();
-
-  if (shouldShowInstallHint()) {
-    setTimeout(showInstallHint, 2500);
-  }
-}
-
 // ── PWA: Service worker registration ─────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -651,4 +18,335 @@ if ('serviceWorker' in navigator) {
   });
 })();
 
-boot();
+// ── Offline banner ────────────────────────────────────────────────────────────
+const offBanner = document.getElementById('offlineBanner');
+function updOnline() { offBanner.style.display = navigator.onLine ? 'none' : 'block'; }
+window.addEventListener('online', updOnline);
+window.addEventListener('offline', updOnline);
+updOnline();
+
+// ── iOS install hint ──────────────────────────────────────────────────────────
+if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone && !localStorage.getItem('ch-hint')) {
+  setTimeout(() => { document.getElementById('installHint').style.display = 'block'; }, 2500);
+}
+document.getElementById('dismissHintBtn').addEventListener('click', () => {
+  document.getElementById('installHint').style.display = 'none';
+  localStorage.setItem('ch-hint', '1');
+});
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let scores = [0, 0], inp = [0, 0], round = 1, exactMode = true, history = [], gameOver = false;
+let firstStarter = 0; // hvilket hold (0 eller 1) starter runde 1 — runder alternerer herfra
+
+// Each history entry: { round, raw0, raw1, n0, n1, preScores, prevBust0, prevBust1, bust0, bust1 }
+
+function starterForRound(r) {
+  return (firstStarter + (r - 1)) % 2;
+}
+
+function save() {
+  try {
+    localStorage.setItem('ch-state', JSON.stringify({
+      scores, round, exactMode, history, gameOver, firstStarter,
+      names: [document.getElementById('name0').value, document.getElementById('name1').value]
+    }));
+  } catch (e) {}
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem('ch-state'); if (!raw) return;
+    const s = JSON.parse(raw);
+    scores = s.scores || [0, 0]; round = s.round || 1;
+    exactMode = s.exactMode !== undefined ? s.exactMode : true;
+    history = s.history || []; gameOver = s.gameOver || false;
+    firstStarter = s.firstStarter !== undefined ? s.firstStarter : 0;
+    if (s.names) {
+      document.getElementById('name0').value = s.names[0] || 'Hold 1';
+      document.getElementById('name1').value = s.names[1] || 'Hold 2';
+    }
+    document.getElementById('modePill').textContent = exactMode ? 'Præcis 21' : 'Mindst 21';
+    document.getElementById('modeInfo').textContent = exactMode
+      ? 'Vinder ved præcis 21 — bust sender dig tilbage til 15'
+      : 'Vinder ved 21 eller derover';
+    syncLabels(); renderBoards(); renderHistory(); renderStarter(); updateAbortBtn();
+    if (gameOver) checkWin();
+  } catch (e) {}
+}
+
+function syncLabels() {
+  const n0 = document.getElementById('name0').value || 'Hold 1';
+  const n1 = document.getElementById('name1').value || 'Hold 2';
+  document.getElementById('inputLabel0').textContent = n0;
+  document.getElementById('inputLabel1').textContent = n1;
+  document.getElementById('editLabel0').textContent = n0;
+  document.getElementById('editLabel1').textContent = n1;
+  renderStarter();
+}
+document.getElementById('name0').addEventListener('input', () => { syncLabels(); save(); });
+document.getElementById('name1').addEventListener('input', () => { syncLabels(); save(); });
+
+// ── Starter indicator ─────────────────────────────────────────────────────────
+function renderStarter() {
+  const s = starterForRound(round);
+  const n0 = document.getElementById('name0').value || 'Hold 1';
+  const n1 = document.getElementById('name1').value || 'Hold 2';
+  const sName = s === 0 ? n0 : n1;
+  document.getElementById('starterText').textContent = sName + ' starter';
+  document.getElementById('board0').classList.toggle('is-starter', s === 0);
+  document.getElementById('board1').classList.toggle('is-starter', s === 1);
+}
+
+function toggleStarter() {
+  if (gameOver) return;
+  // Skifter hvem der starter den AKTUELLE runde, ved at flippe firstStarter
+  // (eftersom starter alternerer strikt, flipper dette starteren for alle fremtidige runder fra nu af også,
+  // hvilket er den forventede effekt hvis man har tastet forkert ind).
+  firstStarter = 1 - firstStarter;
+  renderStarter(); save();
+}
+document.getElementById('starterBanner').addEventListener('click', toggleStarter);
+document.getElementById('starterBanner').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleStarter(); }
+});
+
+// ── Game logic ────────────────────────────────────────────────────────────────
+function toggleMode() {
+  exactMode = !exactMode;
+  document.getElementById('modePill').textContent = exactMode ? 'Præcis 21' : 'Mindst 21';
+  document.getElementById('modeInfo').textContent = exactMode
+    ? 'Vinder ved præcis 21 — bust sender dig tilbage til 15'
+    : 'Vinder ved 21 eller derover';
+  renderBoards(); save();
+}
+
+function change(t, d) {
+  if (gameOver) return;
+  inp[t] = Math.max(0, inp[t] + d);
+  document.getElementById('input' + t).textContent = inp[t];
+}
+
+function applyRound(raw0, raw1, preScores) {
+  const n0 = Math.max(0, raw0 - raw1), n1 = Math.max(0, raw1 - raw0);
+  let s0 = preScores[0] + n0, s1 = preScores[1] + n1;
+  let bust0 = false, bust1 = false;
+  if (exactMode) {
+    if (s0 > 21) { s0 = 15; bust0 = true; }
+    if (s1 > 21) { s1 = 15; bust1 = true; }
+  }
+  return { n0, n1, s0, s1, bust0, bust1 };
+}
+
+function addRound() {
+  if (gameOver) return;
+  if (navigator.vibrate) navigator.vibrate(10);
+  const raw0 = inp[0], raw1 = inp[1];
+  const pre = [...scores];
+  const { n0, n1, s0, s1, bust0, bust1 } = applyRound(raw0, raw1, pre);
+  const prevBust0 = document.getElementById('bust0').textContent;
+  const prevBust1 = document.getElementById('bust1').textContent;
+  history.push({ round, raw0, raw1, n0, n1, preScores: pre, prevBust0, prevBust1, bust0, bust1, starter: starterForRound(round) });
+  scores = [s0, s1]; round++;
+  inp = [0, 0];
+  document.getElementById('input0').textContent = '0';
+  document.getElementById('input1').textContent = '0';
+  document.getElementById('bust0').textContent = bust0 ? 'BUST → 15' : '';
+  document.getElementById('bust1').textContent = bust1 ? 'BUST → 15' : '';
+  renderBoards(); renderHistory(); renderStarter(); updateAbortBtn(); save(); checkWin();
+}
+
+function renderBoards() {
+  const leading = scores[0] === scores[1] ? -1 : (scores[0] > scores[1] ? 0 : 1);
+  for (let i = 0; i < 2; i++) {
+    const el = document.getElementById('score' + i);
+    const b = document.getElementById('board' + i);
+    el.textContent = scores[i];
+    b.classList.remove('winning', 'busted', 'leading');
+    if (exactMode && scores[i] === 21) b.classList.add('winning');
+    else if (!exactMode && scores[i] >= 21) b.classList.add('winning');
+    else if (leading === i && scores[i] > 0) b.classList.add('leading');
+    el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 200);
+  }
+  document.getElementById('roundNum').textContent = round;
+}
+
+function renderHistory() {
+  const l = document.getElementById('historyList'); l.innerHTML = '';
+  if (!history.length) { l.innerHTML = '<div class="empty-note">Ingen runder endnu.</div>'; return; }
+  [...history].reverse().forEach((h, idx) => {
+    const isLast = (idx === 0);
+    const startMark = h.starter === 0
+      ? '<span class="h-starter-dot" title="Hold 1 startede"></span>'
+      : (h.starter === 1 ? '<span class="h-starter-dot" title="Hold 2 startede" style="margin-left:auto"></span>' : '');
+    const d = document.createElement('div');
+    d.className = 'h-item' + (isLast ? ' latest' : '');
+    d.innerHTML = `
+      <span class="h-rnd">R${h.round}</span>
+      <span class="h-pts ${h.n0 > 0 ? 'pos' : 'zero'}">+${h.n0}</span>
+      <span class="h-sep">—</span>
+      <span class="h-pts ${h.n1 > 0 ? 'pos' : 'zero'}">+${h.n1}</span>
+      <span class="h-actions">${isLast ? '<button class="h-btn edt" title="Ret runde">✎</button>' : ''}</span>`;
+    if (isLast) {
+      d.querySelector('.h-btn.edt').addEventListener('click', showEdit);
+    }
+    l.appendChild(d);
+  });
+}
+
+function checkWin() {
+  let w = -1;
+  if (exactMode) {
+    if (scores[0] === 21) w = 0; else if (scores[1] === 21) w = 1;
+  } else {
+    if (scores[0] >= 21 && scores[1] >= 21) w = scores[0] >= scores[1] ? 0 : 1;
+    else if (scores[0] >= 21) w = 0;
+    else if (scores[1] >= 21) w = 1;
+  }
+  if (w < 0) return;
+
+  gameOver = true;
+  const name0 = document.getElementById('name0').value || 'Hold 1';
+  const name1 = document.getElementById('name1').value || 'Hold 2';
+  const wName = w === 0 ? name0 : name1;
+  document.getElementById('winTitle').textContent = wName + ' vinder!';
+  document.getElementById('winSub').textContent = scores[w] + ' point efter ' + (round - 1) + ' runder';
+
+  const totalRounds = history.length;
+  const tot0 = history.reduce((s, h) => s + h.n0, 0);
+  const tot1 = history.reduce((s, h) => s + h.n1, 0);
+  const best0 = history.reduce((m, h) => Math.max(m, h.n0), 0);
+  const best1 = history.reduce((m, h) => Math.max(m, h.n1), 0);
+  const busts0 = history.filter(h => h.bust0).length;
+  const busts1 = history.filter(h => h.bust1).length;
+  const zeros0 = history.filter(h => h.n0 === 0).length;
+  const zeros1 = history.filter(h => h.n1 === 0).length;
+  const bestRound = history.reduce((b, h) => {
+    const t = h.n0 + h.n1; return t > b.t ? { t, r: h.round } : b;
+  }, { t: -1, r: 0 });
+
+  function statRow(label, v0, v1, highlightWinner = false) {
+    const h0 = highlightWinner && w === 0, h1 = highlightWinner && w === 1;
+    return `
+      <div class="stat-item">
+        <div class="stat-label">${name0}<br>${label}</div>
+        <div class="stat-val ${h0 ? 'highlight' : ''}">${v0}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">${name1}<br>${label}</div>
+        <div class="stat-val ${h1 ? 'highlight' : ''}">${v1}</div>
+      </div>`;
+  }
+
+  document.getElementById('statsGrid').innerHTML =
+    statRow('Samlede point', tot0, tot1, true) +
+    statRow('Bedste runde', best0, best1) +
+    statRow('Scoringsrunder', totalRounds - zeros0, totalRounds - zeros1) +
+    (exactMode ? statRow('Busts', busts0, busts1) : '') +
+    `<div class="stat-item stat-wide">
+       <div class="stat-label">Mest aktive runde</div>
+       <div class="stat-val">R${bestRound.r} (${bestRound.t} net-point)</div>
+     </div>`;
+
+  document.getElementById('winModal').classList.add('active');
+  updateAbortBtn(); save();
+}
+
+function newGame() {
+  scores = [0, 0]; inp = [0, 0]; round = 1; history = []; gameOver = false; firstStarter = 0;
+  ['score0', 'score1', 'input0', 'input1'].forEach(id => { document.getElementById(id).textContent = '0'; });
+  ['board0', 'board1'].forEach(id => { document.getElementById(id).classList.remove('winning', 'busted', 'leading'); });
+  ['bust0', 'bust1'].forEach(id => { document.getElementById(id).textContent = ''; });
+  document.getElementById('roundNum').textContent = '1';
+  document.getElementById('winModal').classList.remove('active');
+  renderHistory(); renderStarter(); updateAbortBtn(); localStorage.removeItem('ch-state');
+}
+
+function updateAbortBtn() {
+  const show = (round > 1 || scores[0] > 0 || scores[1] > 0) && !gameOver;
+  document.getElementById('abortBtn').classList.toggle('visible', show);
+}
+
+// ── Abort sheet ───────────────────────────────────────────────────────────────
+function showAbort() { document.getElementById('abortSheet').classList.add('active'); }
+function hideAbort() { document.getElementById('abortSheet').classList.remove('active'); }
+function abortGame() { hideAbort(); newGame(); }
+
+// ── Edit last round ───────────────────────────────────────────────────────────
+let editInp = [0, 0];
+
+function showEdit() {
+  if (!history.length) return;
+  const h = history[history.length - 1];
+  editInp = [h.raw0, h.raw1];
+  document.getElementById('editVal0').textContent = editInp[0];
+  document.getElementById('editVal1').textContent = editInp[1];
+  document.getElementById('editSheetSub').textContent = 'Runde ' + h.round + ' — ændr de kastede point';
+  syncLabels();
+  document.getElementById('editSheet').classList.add('active');
+}
+
+function hideEdit() {
+  document.getElementById('editSheet').classList.remove('active');
+  document.getElementById('deleteConfirm').classList.add('is-hidden');
+  document.getElementById('deleteBtn').classList.remove('is-hidden');
+}
+
+function editChange(t, d) {
+  editInp[t] = Math.max(0, editInp[t] + d);
+  document.getElementById('editVal' + t).textContent = editInp[t];
+}
+
+function saveEdit() {
+  if (!history.length) return;
+  const h = history[history.length - 1];
+  const { n0, n1, s0, s1, bust0, bust1 } = applyRound(editInp[0], editInp[1], h.preScores);
+  h.raw0 = editInp[0]; h.raw1 = editInp[1]; h.n0 = n0; h.n1 = n1; h.bust0 = bust0; h.bust1 = bust1;
+  scores = [s0, s1];
+  document.getElementById('bust0').textContent = bust0 ? 'BUST → 15' : '';
+  document.getElementById('bust1').textContent = bust1 ? 'BUST → 15' : '';
+  hideEdit();
+  renderBoards(); renderHistory(); save();
+}
+
+// ── Delete last round ─────────────────────────────────────────────────────────
+function confirmDelete() {
+  if (!history.length) return;
+  const h = history.pop();
+  scores = [...h.preScores];
+  round = h.round;
+  const prev = history[history.length - 1];
+  document.getElementById('bust0').textContent = prev ? (prev.bust0 ? 'BUST → 15' : '') : '';
+  document.getElementById('bust1').textContent = prev ? (prev.bust1 ? 'BUST → 15' : '') : '';
+  hideEdit();
+  renderBoards(); renderHistory(); renderStarter(); updateAbortBtn(); save();
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+document.getElementById('abortBtn').addEventListener('click', showAbort);
+document.getElementById('modeBtn').addEventListener('click', toggleMode);
+document.getElementById('minus0').addEventListener('click', () => change(0, -1));
+document.getElementById('plus0').addEventListener('click', () => change(0, 1));
+document.getElementById('minus1').addEventListener('click', () => change(1, -1));
+document.getElementById('plus1').addEventListener('click', () => change(1, 1));
+document.getElementById('addRoundBtn').addEventListener('click', addRound);
+document.getElementById('newGameBtn').addEventListener('click', newGame);
+document.getElementById('abortCancelBtn').addEventListener('click', hideAbort);
+document.getElementById('abortConfirmBtn').addEventListener('click', abortGame);
+document.getElementById('editMinus0').addEventListener('click', () => editChange(0, -1));
+document.getElementById('editPlus0').addEventListener('click', () => editChange(0, 1));
+document.getElementById('editMinus1').addEventListener('click', () => editChange(1, -1));
+document.getElementById('editPlus1').addEventListener('click', () => editChange(1, 1));
+document.getElementById('editCancelBtn').addEventListener('click', hideEdit);
+document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
+document.getElementById('deleteBtn').addEventListener('click', () => {
+  document.getElementById('deleteConfirm').classList.remove('is-hidden');
+  document.getElementById('deleteBtn').classList.add('is-hidden');
+});
+document.getElementById('deleteCancelBtn').addEventListener('click', () => {
+  document.getElementById('deleteConfirm').classList.add('is-hidden');
+  document.getElementById('deleteBtn').classList.remove('is-hidden');
+});
+document.getElementById('deleteConfirmBtn').addEventListener('click', confirmDelete);
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+load();
