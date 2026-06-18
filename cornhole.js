@@ -69,7 +69,7 @@ function load() {
     document.getElementById('modeInfo').textContent = exactMode
       ? 'Vinder ved præcis 21 — bust sender dig tilbage til 15'
       : 'Vinder ved 21 eller derover';
-    syncLabels(); renderBoards(); renderHistory(); renderStarter(); updateAbortBtn();
+    syncLabels(); renderBoards(); renderHistory(); renderStarter(); renderBags(); updateAbortBtn();
     if (gameOver) checkWin();
   } catch (e) {}
 }
@@ -82,6 +82,7 @@ function syncLabels() {
   document.getElementById('editLabel0').textContent = n0;
   document.getElementById('editLabel1').textContent = n1;
   renderStarter();
+  renderBags();
 }
 document.getElementById('name0').addEventListener('input', () => { syncLabels(); save(); });
 document.getElementById('name1').addEventListener('input', () => { syncLabels(); save(); });
@@ -120,10 +121,61 @@ function toggleMode() {
   renderBoards(); save();
 }
 
-function change(t, d) {
+// ── Bag tapper state ──────────────────────────────────────────────────────────
+// bagState[team][bag]: 0 = empty, 1 = board (1pt), 3 = hole (3pt)
+let bagState = [[0,0,0,0],[0,0,0,0]];
+const BAG_CYCLE = [0, 1, 3]; // empty → board → hole → empty
+
+function bagTotal(team) {
+  return bagState[team].reduce((s, v) => s + v, 0);
+}
+
+function renderBags() {
+  for (let t = 0; t < 2; t++) {
+    const btns = document.querySelectorAll(`.bag-btn[data-team="${t}"]`);
+    let total = 0;
+    btns.forEach((btn, i) => {
+      const v = bagState[t][i];
+      total += v;
+      btn.dataset.state = v;
+      if (v === 0)      { btn.textContent = '⬛'; btn.setAttribute('aria-label', `Hold ${t+1} pose ${i+1}: tom`); }
+      else if (v === 1) { btn.textContent = '🟫'; btn.setAttribute('aria-label', `Hold ${t+1} pose ${i+1}: på brættet (1)`); }
+      else              { btn.textContent = '🕳️'; btn.setAttribute('aria-label', `Hold ${t+1} pose ${i+1}: i hullet (3)`); }
+    });
+    inp[t] = total;
+    document.getElementById('bagPreview' + t).textContent = total + (total === 1 ? ' point' : ' point');
+  }
+  // Net preview
+  const net0 = Math.max(0, inp[0] - inp[1]);
+  const net1 = Math.max(0, inp[1] - inp[0]);
+  const netEl = document.getElementById('bagNetPreview');
+  if (inp[0] === 0 && inp[1] === 0) {
+    netEl.textContent = '';
+  } else if (net0 === 0 && net1 === 0) {
+    netEl.textContent = 'Udligner — 0 net til begge';
+  } else {
+    const n0 = document.getElementById('name0').value || 'Hold 1';
+    const n1 = document.getElementById('name1').value || 'Hold 2';
+    const parts = [];
+    if (net0 > 0) parts.push(`${n0} +${net0}`);
+    if (net1 > 0) parts.push(`${n1} +${net1}`);
+    netEl.textContent = 'Net: ' + parts.join(' · ');
+  }
+}
+
+function tapBag(team, bag) {
   if (gameOver) return;
-  inp[t] = Math.max(0, inp[t] + d);
-  document.getElementById('input' + t).textContent = inp[t];
+  if (navigator.vibrate) navigator.vibrate(8);
+  const cur = bagState[team][bag];
+  const idx = BAG_CYCLE.indexOf(cur);
+  bagState[team][bag] = BAG_CYCLE[(idx + 1) % BAG_CYCLE.length];
+  renderBags();
+}
+
+function resetBags() {
+  bagState = [[0,0,0,0],[0,0,0,0]];
+  inp = [0, 0];
+  renderBags();
 }
 
 function applyRound(raw0, raw1, preScores) {
@@ -147,9 +199,7 @@ function addRound() {
   const prevBust1 = document.getElementById('bust1').textContent;
   history.push({ round, raw0, raw1, n0, n1, preScores: pre, prevBust0, prevBust1, bust0, bust1, starter: starterForRound(round) });
   scores = [s0, s1]; round++;
-  inp = [0, 0];
-  document.getElementById('input0').textContent = '0';
-  document.getElementById('input1').textContent = '0';
+  resetBags();
   document.getElementById('bust0').textContent = bust0 ? 'BUST → 15' : '';
   document.getElementById('bust1').textContent = bust1 ? 'BUST → 15' : '';
   renderBoards(); renderHistory(); renderStarter(); updateAbortBtn(); save(); checkWin();
@@ -253,11 +303,12 @@ function checkWin() {
 
 function newGame() {
   scores = [0, 0]; inp = [0, 0]; round = 1; history = []; gameOver = false; firstStarter = 0;
-  ['score0', 'score1', 'input0', 'input1'].forEach(id => { document.getElementById(id).textContent = '0'; });
+  ['score0', 'score1'].forEach(id => { document.getElementById(id).textContent = '0'; });
   ['board0', 'board1'].forEach(id => { document.getElementById(id).classList.remove('winning', 'busted', 'leading'); });
   ['bust0', 'bust1'].forEach(id => { document.getElementById(id).textContent = ''; });
   document.getElementById('roundNum').textContent = '1';
   document.getElementById('winModal').classList.remove('active');
+  resetBags();
   renderHistory(); renderStarter(); updateAbortBtn(); localStorage.removeItem('ch-state');
 }
 
@@ -324,10 +375,9 @@ function confirmDelete() {
 // ── Event listeners ───────────────────────────────────────────────────────────
 document.getElementById('abortBtn').addEventListener('click', showAbort);
 document.getElementById('modeBtn').addEventListener('click', toggleMode);
-document.getElementById('minus0').addEventListener('click', () => change(0, -1));
-document.getElementById('plus0').addEventListener('click', () => change(0, 1));
-document.getElementById('minus1').addEventListener('click', () => change(1, -1));
-document.getElementById('plus1').addEventListener('click', () => change(1, 1));
+document.querySelectorAll('.bag-btn').forEach(btn => {
+  btn.addEventListener('click', () => tapBag(+btn.dataset.team, +btn.dataset.bag));
+});
 document.getElementById('addRoundBtn').addEventListener('click', addRound);
 document.getElementById('newGameBtn').addEventListener('click', newGame);
 document.getElementById('abortCancelBtn').addEventListener('click', hideAbort);
@@ -349,4 +399,5 @@ document.getElementById('deleteCancelBtn').addEventListener('click', () => {
 document.getElementById('deleteConfirmBtn').addEventListener('click', confirmDelete);
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+renderBags();
 load();

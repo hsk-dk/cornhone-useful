@@ -62,25 +62,30 @@
           <span id="starterText">Hold 1 starter</span>
           <span class="swap-hint">(tryk for at rette)</span>
         </div>
-        <div class="input-row">
-          <div class="input-group">
-            <div class="input-group-label" id="inputLabel0">Hold 1</div>
-            <div class="counter">
-              <button class="counter-btn" id="minus0" aria-label="Sænk Hold 1 input">−</button>
-              <div class="counter-val" id="input0">0</div>
-              <button class="counter-btn" id="plus0" aria-label="Hæv Hold 1 input">+</button>
+        <div class="bag-input-wrap">
+          <div class="bag-team-row">
+            <div class="bag-team-label" id="inputLabel0">Hold 1</div>
+            <div class="bag-row" id="bags0">
+              <button class="bag-btn" data-team="0" data-bag="0" aria-label="Hold 1 pose 1"></button>
+              <button class="bag-btn" data-team="0" data-bag="1" aria-label="Hold 1 pose 2"></button>
+              <button class="bag-btn" data-team="0" data-bag="2" aria-label="Hold 1 pose 3"></button>
+              <button class="bag-btn" data-team="0" data-bag="3" aria-label="Hold 1 pose 4"></button>
             </div>
+            <div class="bag-score-preview" id="bagPreview0">0 point</div>
           </div>
-          <div class="vs">vs</div>
-          <div class="input-group">
-            <div class="input-group-label" id="inputLabel1">Hold 2</div>
-            <div class="counter">
-              <button class="counter-btn" id="minus1" aria-label="Sænk Hold 2 input">−</button>
-              <div class="counter-val" id="input1">0</div>
-              <button class="counter-btn" id="plus1" aria-label="Hæv Hold 2 input">+</button>
+          <div class="bag-vs">vs</div>
+          <div class="bag-team-row">
+            <div class="bag-team-label" id="inputLabel1">Hold 2</div>
+            <div class="bag-row" id="bags1">
+              <button class="bag-btn" data-team="1" data-bag="0" aria-label="Hold 2 pose 1"></button>
+              <button class="bag-btn" data-team="1" data-bag="1" aria-label="Hold 2 pose 2"></button>
+              <button class="bag-btn" data-team="1" data-bag="2" aria-label="Hold 2 pose 3"></button>
+              <button class="bag-btn" data-team="1" data-bag="3" aria-label="Hold 2 pose 4"></button>
             </div>
+            <div class="bag-score-preview" id="bagPreview1">0 point</div>
           </div>
         </div>
+        <div class="bag-net-preview" id="bagNetPreview"></div>
         <button class="btn btn-primary btn-add" id="addRoundBtn">Registrér runde</button>
         <div class="mode-note" id="modeInfo">Vinder ved præcis 21 — bust sender dig tilbage til 15</div>
       </div>

@@ -206,6 +206,70 @@ body { display: flex; flex-direction: column; min-height: 100dvh; background: tr
 .btn-add { margin-top: .75rem; width: 100%; border-radius: .75rem !important; }
 .mode-note { margin-top: .5rem; font-size: .7rem; color: var(--muted); text-align: center; }
 
+/* ── Bag tapper ── */
+.bag-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.bag-team-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+}
+
+.bag-team-label {
+  font-size: .65rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+
+.bag-row {
+  display: flex;
+  gap: .4rem;
+  justify-content: center;
+}
+
+.bag-btn {
+  width: 62px; height: 62px;
+  font-size: 1.6rem;
+  background: var(--gray-light);
+  border: 2px solid var(--border);
+  border-radius: .75rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .1s, border-color .15s, background .15s;
+  line-height: 1;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.bag-btn:active { transform: scale(.88); }
+.bag-btn[data-state="1"] {
+  border-color: #b77a4a;
+  background: rgba(183,122,74,.1);
+}
+.bag-btn[data-state="3"] {
+  border-color: var(--primary);
+  background: rgba(87,85,217,.1);
+}
+
+.bag-score-preview {
+  font-size: .75rem; font-weight: 700; color: var(--primary);
+  min-height: 1.1em;
+}
+
+.bag-vs {
+  font-size: .75rem; color: var(--muted); text-align: center;
+  font-style: italic; padding: .1rem 0;
+}
+
+.bag-net-preview {
+  font-size: .72rem; font-weight: 600; color: var(--gray-dark);
+  text-align: center; min-height: 1.1em; margin-top: -.1rem;
+}
+
 /* ── History ── */
 .history-wrap {
   border: 1.5px solid rgba(255,255,255,0.6);
