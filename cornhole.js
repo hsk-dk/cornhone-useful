@@ -74,7 +74,9 @@ const editState = {
   input: [0, 0]
 };
 
-// Each history entry: { round, raw0, raw1, n0, n1, preScores, bust0, bust1 }
+// Each history entry:
+// { round, raw0, raw1, n0, n1, preScores, bust0, bust1 }
+// round = round number, raw* = thrown points, n* = net points, preScores = scores before the round.
 
 function getModeCopy(exactMode) {
   return MODE_COPY[String(exactMode)];
@@ -241,7 +243,7 @@ function computeGameStats(history) {
   const bestRounds = [0, 0];
   const busts = [0, 0];
   const zeroRounds = [0, 0];
-  let bestRound = { t: -1, r: 0 };
+  let bestRound = { total: -1, round: 0 };
 
   history.forEach(roundEntry => {
     totals[0] += roundEntry.n0;
@@ -254,8 +256,8 @@ function computeGameStats(history) {
     zeroRounds[1] += roundEntry.n1 === 0 ? 1 : 0;
 
     const roundTotal = roundEntry.n0 + roundEntry.n1;
-    if (roundTotal > bestRound.t) {
-      bestRound = { t: roundTotal, r: roundEntry.round };
+    if (roundTotal > bestRound.total) {
+      bestRound = { total: roundTotal, round: roundEntry.round };
     }
   });
 
@@ -308,7 +310,7 @@ function renderStatsGrid(names, winner, stats) {
 
   const bestRoundValue = document.createElement('div');
   bestRoundValue.className = 'stat-val';
-  setText(bestRoundValue, `R${stats.bestRound.r} (${stats.bestRound.t} net-point)`);
+  setText(bestRoundValue, `R${stats.bestRound.round} (${stats.bestRound.total} net-point)`);
 
   bestRoundItem.appendChild(bestRoundLabel);
   bestRoundItem.appendChild(bestRoundValue);
