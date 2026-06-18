@@ -32,13 +32,19 @@
   <main class="main">
     <section class="score-grid" aria-label="Scoreoversigt">
       <div class="score-card" id="board0">
-        <input class="team-name-input" id="name0" value="Hold 1" maxlength="10" autocomplete="off" aria-label="Hold 1 navn">
+        <div class="team-name-row">
+          <span class="starter-dot" id="starterDot0" title="Starter denne runde" aria-hidden="true"></span>
+          <input class="team-name-input" id="name0" value="Hold 1" maxlength="10" autocomplete="off" aria-label="Hold 1 navn">
+        </div>
         <div class="score-num" id="score0" aria-live="polite">0</div>
         <div class="score-sub">point</div>
         <div class="bust-label" id="bust0" aria-live="polite"></div>
       </div>
       <div class="score-card" id="board1">
-        <input class="team-name-input" id="name1" value="Hold 2" maxlength="10" autocomplete="off" aria-label="Hold 2 navn">
+        <div class="team-name-row">
+          <span class="starter-dot" id="starterDot1" title="Starter denne runde" aria-hidden="true"></span>
+          <input class="team-name-input" id="name1" value="Hold 2" maxlength="10" autocomplete="off" aria-label="Hold 2 navn">
+        </div>
         <div class="score-num" id="score1" aria-live="polite">0</div>
         <div class="score-sub">point</div>
         <div class="bust-label" id="bust1" aria-live="polite"></div>
@@ -51,6 +57,11 @@
         <span class="panel-round" id="roundNum">1</span>
       </div>
       <div class="panel-body">
+        <div class="starter-banner" id="starterBanner" role="button" tabindex="0" title="Tryk for at rette hvem der starter">
+          <span class="starter-icon">🎯</span>
+          <span id="starterText">Hold 1 starter</span>
+          <span class="swap-hint">(tryk for at rette)</span>
+        </div>
         <div class="input-row">
           <div class="input-group">
             <div class="input-group-label" id="inputLabel0">Hold 1</div>
