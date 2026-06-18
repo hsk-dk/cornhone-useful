@@ -1,13 +1,11 @@
-const CACHE = 'cornhole-v4';
+const CACHE = 'cornhole-v6';
 const APP_SHELL = [
   './',
   './cornhole.html',
   './cornhole.css',
   './cornhole.js',
   './manifest.webmanifest',
-  'https://unpkg.com/spectre.css/dist/spectre.min.css',
-  'https://auth.useful.dk/media/public/logo_2.svg',
-  'https://auth.useful.dk/media/public/background.jpg'
+  'https://unpkg.com/spectre.css/dist/spectre.min.css'
 ];
 
 self.addEventListener('install', (event) => {
