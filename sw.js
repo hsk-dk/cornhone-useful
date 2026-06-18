@@ -1,4 +1,4 @@
-const CACHE = 'cornhole-v6';
+const CACHE = 'cornhole-v7';
 const APP_SHELL = [
   './',
   './cornhole.html',
